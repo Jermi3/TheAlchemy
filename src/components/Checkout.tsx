@@ -473,7 +473,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack, tabl
                 : 'bg-gradient-to-r from-alchemy-gold via-alchemy-copper to-alchemy-gold text-alchemy-night hover:from-alchemy-copper hover:to-alchemy-gold hover:scale-[1.02]'
             }`}
           >
-            {isSubmitting ? 'Saving order…' : 'Place Order via Messenger'}
+            {isSubmitting ? 'Saving order…' : 'Place Order'}
           </button>
           
           <p className="text-xs text-alchemy-cream/60 text-center mt-3">
