@@ -11,7 +11,8 @@ const SiteSettingsManager: React.FC = () => {
     site_name: '',
     site_description: '',
     currency: '',
-    currency_code: ''
+    currency_code: '',
+    cart_item_limit: ''
   });
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string>('');
@@ -22,7 +23,8 @@ const SiteSettingsManager: React.FC = () => {
         site_name: siteSettings.site_name,
         site_description: siteSettings.site_description,
         currency: siteSettings.currency,
-        currency_code: siteSettings.currency_code
+        currency_code: siteSettings.currency_code,
+        cart_item_limit: siteSettings.cart_item_limit.toString()
       });
       setLogoPreview(siteSettings.site_logo);
     }
@@ -54,7 +56,7 @@ const SiteSettingsManager: React.FC = () => {
       
       // Upload new logo if selected
       if (logoFile) {
-        const uploadedUrl = await uploadImage(logoFile, 'site-logo');
+        const uploadedUrl = await uploadImage(logoFile);
         logoUrl = uploadedUrl;
       }
 
@@ -64,6 +66,7 @@ const SiteSettingsManager: React.FC = () => {
         site_description: formData.site_description,
         currency: formData.currency,
         currency_code: formData.currency_code,
+        cart_item_limit: parseInt(formData.cart_item_limit, 10),
         site_logo: logoUrl
       });
 
@@ -80,7 +83,8 @@ const SiteSettingsManager: React.FC = () => {
         site_name: siteSettings.site_name,
         site_description: siteSettings.site_description,
         currency: siteSettings.currency,
-        currency_code: siteSettings.currency_code
+        currency_code: siteSettings.currency_code,
+        cart_item_limit: siteSettings.cart_item_limit.toString()
       });
       setLogoPreview(siteSettings.site_logo);
     }
@@ -249,6 +253,30 @@ const SiteSettingsManager: React.FC = () => {
               <p className="text-lg font-medium text-black">{siteSettings?.currency_code}</p>
             )}
           </div>
+        </div>
+
+        {/* Cart Settings */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Cart Item Limit
+          </label>
+          {isEditing ? (
+            <input
+              type="number"
+              name="cart_item_limit"
+              value={formData.cart_item_limit}
+              onChange={handleInputChange}
+              min="1"
+              max="1000"
+              className="w-full px-3 py-2 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+              placeholder="Maximum items allowed in cart"
+            />
+          ) : (
+            <p className="text-lg font-medium text-black">{siteSettings?.cart_item_limit} items</p>
+          )}
+          <p className="text-xs text-gray-500 mt-1">
+            Maximum number of items a customer can add to their cart
+          </p>
         </div>
       </div>
     </div>

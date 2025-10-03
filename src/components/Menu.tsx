@@ -19,10 +19,11 @@ interface MenuProps {
   addToCart: (item: MenuItem, quantity?: number, variation?: any, addOns?: any[]) => void;
   cartItems: CartItem[];
   updateQuantity: (id: string, quantity: number) => void;
+  canAddToCart: (quantity?: number) => boolean;
   onTrackOrder?: () => void;
 }
 
-const Menu: React.FC<MenuProps> = ({ menuItems, addToCart, cartItems, updateQuantity, onTrackOrder }) => {
+const Menu: React.FC<MenuProps> = ({ menuItems, addToCart, cartItems, updateQuantity, canAddToCart, onTrackOrder }) => {
   const { categories } = useCategories();
   const [activeCategory, setActiveCategory] = React.useState('hot-coffee');
 
@@ -118,14 +119,25 @@ const Menu: React.FC<MenuProps> = ({ menuItems, addToCart, cartItems, updateQuan
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7">
               {categoryItems.map((item) => {
-                const cartItem = cartItems.find(cartItem => cartItem.id === item.id);
+                // Find cart item that matches the base item (without variations/add-ons)
+                // We need to find cart items that have the same base menu item ID and no variations/add-ons
+                const baseCartItem = cartItems.find(cartItem => {
+                  // Extract the base menu item ID from the cart item ID
+                  const baseId = cartItem.id.split('-')[0];
+                  return baseId === item.id && 
+                         !cartItem.selectedVariation && 
+                         (!cartItem.selectedAddOns || cartItem.selectedAddOns.length === 0);
+                });
+                
                 return (
                   <MenuItemCard
                     key={item.id}
                     item={item}
                     onAddToCart={addToCart}
-                    quantity={cartItem?.quantity || 0}
+                    quantity={baseCartItem?.quantity || 0}
                     onUpdateQuantity={updateQuantity}
+                    canAddToCart={canAddToCart}
+                    cartItemId={baseCartItem?.id}
                   />
                 );
               })}

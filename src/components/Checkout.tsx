@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, AlertCircle } from 'lucide-react';
 import { CartItem, PaymentMethod, ServiceType, OrderData } from '../types';
 import { usePaymentMethods } from '../hooks/usePaymentMethods';
+import { useSiteSettings } from '../hooks/useSiteSettings';
 import { supabase } from '../lib/supabase';
 
 interface CheckoutProps {
@@ -14,6 +15,7 @@ interface CheckoutProps {
 
 const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack, tableNumber: initialTableNumber, onOrderComplete }) => {
   const { paymentMethods } = usePaymentMethods();
+  const { siteSettings } = useSiteSettings();
   const [step, setStep] = useState<'details' | 'payment'>('details');
   const [customerName, setCustomerName] = useState('');
   const [contactNumber, setContactNumber] = useState('');
@@ -46,6 +48,11 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack, tabl
 
   const selectedPaymentMethod = paymentMethods.find(method => method.id === paymentMethod);
   const trimmedTableNumber = tableNumber.trim();
+  
+  // Calculate total items and check cart limit
+  const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  const cartLimit = siteSettings?.cart_item_limit || 50;
+  const isOverLimit = totalItems > cartLimit;
 
   const handleProceedToPayment = () => {
     setStep('payment');
@@ -96,6 +103,12 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack, tabl
 
   const handlePlaceOrder = async () => {
     if (isSubmitting) return;
+    
+    // Prevent order if cart limit is exceeded
+    if (isOverLimit) {
+      setSubmitError(`Cart limit exceeded. You have ${totalItems} items, but the limit is ${cartLimit}.`);
+      return;
+    }
 
     setSubmitError(null);
     setCreatedOrderCode(null);
@@ -191,6 +204,19 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack, tabl
           {/* Order Summary */}
           <div className="alchemy-panel rounded-2xl p-6 border border-white/10">
             <h2 className="text-2xl font-playfair font-medium text-alchemy-gold mb-6">Order Summary</h2>
+            
+            {/* Cart Limit Warning */}
+            {isOverLimit && (
+              <div className="mb-6 bg-red-500/10 border border-red-500/40 text-red-200 px-4 py-3 rounded-xl flex items-center space-x-2">
+                <AlertCircle className="h-5 w-5 flex-shrink-0" />
+                <div>
+                  <div className="font-semibold">Cart Limit Exceeded</div>
+                  <div className="text-xs text-red-100/80">
+                    You have {totalItems} items in your cart, but the limit is {cartLimit}. Please return to cart and remove some items.
+                  </div>
+                </div>
+              </div>
+            )}
             
             <div className="space-y-4 mb-6">
               {cartItems.map((item) => (
@@ -316,14 +342,14 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack, tabl
 
               <button
                 onClick={handleProceedToPayment}
-                disabled={!isDetailsValid}
+                disabled={!isDetailsValid || isOverLimit}
                 className={`w-full py-4 rounded-xl font-medium text-lg transition-all duration-200 transform ${
-                  isDetailsValid
+                  isDetailsValid && !isOverLimit
                     ? 'bg-gradient-to-r from-alchemy-gold via-alchemy-copper to-alchemy-gold text-alchemy-night hover:from-alchemy-copper hover:to-alchemy-gold hover:scale-[1.02] shadow-lg shadow-black/40'
                     : 'bg-white/5 text-alchemy-cream/40 cursor-not-allowed'
                 }`}
               >
-                Proceed to Payment
+                {isOverLimit ? 'Cart Limit Exceeded' : 'Proceed to Payment'}
               </button>
             </form>
           </div>
@@ -403,6 +429,19 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack, tabl
         <div className="alchemy-panel rounded-2xl p-6 border border-white/10">
           <h2 className="text-2xl font-playfair font-medium text-alchemy-gold mb-6">Final Order Summary</h2>
           
+          {/* Cart Limit Warning */}
+          {isOverLimit && (
+            <div className="mb-6 bg-red-500/10 border border-red-500/40 text-red-200 px-4 py-3 rounded-xl flex items-center space-x-2">
+              <AlertCircle className="h-5 w-5 flex-shrink-0" />
+              <div>
+                <div className="font-semibold">Cart Limit Exceeded</div>
+                <div className="text-xs text-red-100/80">
+                  You have {totalItems} items in your cart, but the limit is {cartLimit}. Please return to cart and remove some items.
+                </div>
+              </div>
+            </div>
+          )}
+          
           <div className="space-y-4 mb-6">
             <div className="bg-white/5 border border-white/10 rounded-lg p-4">
               <h4 className="font-medium text-alchemy-cream mb-2">Customer Details</h4>
@@ -466,14 +505,14 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack, tabl
 
           <button
             onClick={handlePlaceOrder}
-            disabled={isSubmitting}
+            disabled={isSubmitting || isOverLimit}
             className={`w-full py-4 rounded-xl font-medium text-lg transition-all duration-200 transform shadow-lg shadow-black/40 ${
-              isSubmitting
+              isSubmitting || isOverLimit
                 ? 'bg-white/10 text-alchemy-cream/60 cursor-not-allowed'
                 : 'bg-gradient-to-r from-alchemy-gold via-alchemy-copper to-alchemy-gold text-alchemy-night hover:from-alchemy-copper hover:to-alchemy-gold hover:scale-[1.02]'
             }`}
           >
-            {isSubmitting ? 'Saving order…' : 'Place Order'}
+            {isOverLimit ? 'Cart Limit Exceeded' : isSubmitting ? 'Saving order…' : 'Place Order'}
           </button>
           
           <p className="text-xs text-alchemy-cream/60 text-center mt-3">

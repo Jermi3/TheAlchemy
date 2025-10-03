@@ -1,6 +1,7 @@
 import React from 'react';
-import { Trash2, Plus, Minus, ArrowLeft } from 'lucide-react';
+import { Trash2, Plus, Minus, ArrowLeft, AlertCircle } from 'lucide-react';
 import { CartItem } from '../types';
+import { useSiteSettings } from '../hooks/useSiteSettings';
 
 interface CartProps {
   cartItems: CartItem[];
@@ -21,6 +22,12 @@ const Cart: React.FC<CartProps> = ({
   onContinueShopping,
   onCheckout
 }) => {
+  const { siteSettings } = useSiteSettings();
+  
+  // Calculate total items in cart
+  const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  const cartLimit = siteSettings?.cart_item_limit || 50;
+  const isOverLimit = totalItems > cartLimit;
   if (cartItems.length === 0) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-12 text-alchemy-cream">
@@ -113,6 +120,39 @@ const Cart: React.FC<CartProps> = ({
       </div>
 
       <div className="alchemy-panel rounded-2xl p-6 border border-white/10">
+        {/* Cart Limit Warning */}
+        {isOverLimit && (
+          <div className="mb-4 bg-red-500/10 border border-red-500/40 text-red-200 px-4 py-3 rounded-xl flex items-center space-x-2">
+            <AlertCircle className="h-5 w-5 flex-shrink-0" />
+            <div>
+              <div className="font-semibold">Cart Limit Exceeded</div>
+              <div className="text-xs text-red-100/80">
+                You have {totalItems} items in your cart, but the limit is {cartLimit}. Please remove some items to proceed.
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Cart Summary */}
+        <div className="mb-4">
+          <div className="flex items-center justify-between text-sm text-alchemy-cream/70 mb-2">
+            <span>Items: {totalItems} / {cartLimit}</span>
+            <span>{((totalItems / cartLimit) * 100).toFixed(0)}% of limit</span>
+          </div>
+          <div className="w-full bg-white/10 rounded-full h-2">
+            <div 
+              className={`h-2 rounded-full transition-all duration-300 ${
+                isOverLimit 
+                  ? 'bg-red-500' 
+                  : totalItems / cartLimit > 0.8 
+                    ? 'bg-yellow-500' 
+                    : 'bg-alchemy-gold'
+              }`}
+              style={{ width: `${Math.min((totalItems / cartLimit) * 100, 100)}%` }}
+            />
+          </div>
+        </div>
+
         <div className="flex items-center justify-between text-2xl font-playfair font-semibold text-alchemy-gold mb-6">
           <span>Total:</span>
           <span>₱{parseFloat(getTotalPrice() || 0).toFixed(2)}</span>
@@ -120,9 +160,14 @@ const Cart: React.FC<CartProps> = ({
         
         <button
           onClick={onCheckout}
-          className="w-full bg-gradient-to-r from-alchemy-gold via-alchemy-copper to-alchemy-gold text-alchemy-night py-4 rounded-xl hover:from-alchemy-copper hover:to-alchemy-gold transition-all duration-200 transform hover:scale-[1.02] font-medium text-lg shadow-lg shadow-black/40"
+          disabled={isOverLimit}
+          className={`w-full py-4 rounded-xl font-medium text-lg transition-all duration-200 transform shadow-lg shadow-black/40 ${
+            isOverLimit
+              ? 'bg-white/10 text-alchemy-cream/40 cursor-not-allowed'
+              : 'bg-gradient-to-r from-alchemy-gold via-alchemy-copper to-alchemy-gold text-alchemy-night hover:from-alchemy-copper hover:to-alchemy-gold hover:scale-[1.02]'
+          }`}
         >
-          Proceed to Checkout
+          {isOverLimit ? 'Cart Limit Exceeded' : 'Proceed to Checkout'}
         </button>
       </div>
     </div>

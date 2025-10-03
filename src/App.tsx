@@ -9,6 +9,7 @@ import Checkout from './components/Checkout';
 import FloatingCartButton from './components/FloatingCartButton';
 import AdminDashboard from './components/AdminDashboard';
 import OrderTracker from './components/OrderTracker';
+import Footer from './components/Footer';
 import { useMenu } from './hooks/useMenu';
 
 function MainApp() {
@@ -47,7 +48,7 @@ function MainApp() {
     : menuItems.filter(item => item.category === selectedCategory);
 
   return (
-    <div className="min-h-screen bg-alchemy-night font-inter text-alchemy-cream">
+    <div className="min-h-screen bg-alchemy-night font-inter text-alchemy-cream flex flex-col">
       <Header 
         cartItemsCount={cart.getTotalItems()}
         onCartClick={() => handleViewChange('cart')}
@@ -58,44 +59,47 @@ function MainApp() {
         <SubNav selectedCategory={selectedCategory} onCategoryClick={handleCategoryClick} />
       )}
       
-      {currentView === 'menu' && (
-        <Menu 
-          menuItems={filteredMenuItems}
-          addToCart={cart.addToCart}
-          cartItems={cart.cartItems}
-          updateQuantity={cart.updateQuantity}
-          onTrackOrder={() => goToTrack()}
-        />
-      )}
-      
-      {currentView === 'cart' && (
-        <Cart 
-          cartItems={cart.cartItems}
-          updateQuantity={cart.updateQuantity}
-          removeFromCart={cart.removeFromCart}
-          clearCart={cart.clearCart}
-          getTotalPrice={cart.getTotalPrice}
-          onContinueShopping={() => handleViewChange('menu')}
-          onCheckout={() => handleViewChange('checkout')}
-        />
-      )}
-      
-      {currentView === 'checkout' && (
-        <Checkout 
-          cartItems={cart.cartItems}
-          totalPrice={cart.getTotalPrice()}
-          onBack={() => handleViewChange('cart')}
-          tableNumber={tableNumber}
-          onOrderComplete={(code) => {
-            cart.clearCart();
-            goToTrack(code);
-          }}
-        />
-      )}
+      <main className="flex-1">
+        {currentView === 'menu' && (
+          <Menu 
+            menuItems={filteredMenuItems}
+            addToCart={cart.addToCart}
+            cartItems={cart.cartItems}
+            updateQuantity={cart.updateQuantity}
+            canAddToCart={cart.canAddToCart}
+            onTrackOrder={() => goToTrack()}
+          />
+        )}
+        
+        {currentView === 'cart' && (
+          <Cart 
+            cartItems={cart.cartItems}
+            updateQuantity={cart.updateQuantity}
+            removeFromCart={cart.removeFromCart}
+            clearCart={cart.clearCart}
+            getTotalPrice={cart.getTotalPrice}
+            onContinueShopping={() => handleViewChange('menu')}
+            onCheckout={() => handleViewChange('checkout')}
+          />
+        )}
+        
+        {currentView === 'checkout' && (
+          <Checkout 
+            cartItems={cart.cartItems}
+            totalPrice={cart.getTotalPrice()}
+            onBack={() => handleViewChange('cart')}
+            tableNumber={tableNumber}
+            onOrderComplete={(code) => {
+              cart.clearCart();
+              goToTrack(code);
+            }}
+          />
+        )}
 
-      {currentView === 'track' && (
-        <OrderTracker onBack={() => handleViewChange('menu')} initialCode={lastOrderCode} />
-      )}
+        {currentView === 'track' && (
+          <OrderTracker onBack={() => handleViewChange('menu')} initialCode={lastOrderCode} />
+        )}
+      </main>
 
       {currentView === 'menu' && (
         <FloatingCartButton 
@@ -103,6 +107,8 @@ function MainApp() {
           onCartClick={() => handleViewChange('cart')}
         />
       )}
+
+      <Footer />
     </div>
   );
 }

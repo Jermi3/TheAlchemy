@@ -7,13 +7,17 @@ interface MenuItemCardProps {
   onAddToCart: (item: MenuItem, quantity?: number, variation?: Variation, addOns?: AddOn[]) => void;
   quantity: number;
   onUpdateQuantity: (id: string, quantity: number) => void;
+  canAddToCart: (quantity?: number) => boolean;
+  cartItemId?: string; // The actual cart item ID for this base item
 }
 
 const MenuItemCard: React.FC<MenuItemCardProps> = ({ 
   item, 
   onAddToCart, 
   quantity, 
-  onUpdateQuantity 
+  onUpdateQuantity,
+  canAddToCart,
+  cartItemId
 }) => {
   const [showCustomization, setShowCustomization] = useState(false);
   const [selectedVariation, setSelectedVariation] = useState<Variation | undefined>(
@@ -42,22 +46,31 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
   };
 
   const handleCustomizedAddToCart = () => {
-    // Convert selectedAddOns back to regular AddOn array for cart
-    const addOnsForCart: AddOn[] = selectedAddOns.flatMap(addOn => 
-      Array(addOn.quantity).fill({ ...addOn, quantity: undefined })
-    );
+    // Convert selectedAddOns to regular AddOn array (without quantity property for cart)
+    const addOnsForCart: AddOn[] = selectedAddOns.map(addOn => ({
+      id: addOn.id,
+      name: addOn.name,
+      price: addOn.price,
+      category: addOn.category
+    }));
     onAddToCart(item, 1, selectedVariation, addOnsForCart);
     setShowCustomization(false);
     setSelectedAddOns([]);
   };
 
   const handleIncrement = () => {
-    onUpdateQuantity(item.id, quantity + 1);
+    if (canAddToCart(1)) {
+      if (cartItemId) {
+        onUpdateQuantity(cartItemId, quantity + 1);
+      } else {
+        onAddToCart(item, 1);
+      }
+    }
   };
 
   const handleDecrement = () => {
-    if (quantity > 0) {
-      onUpdateQuantity(item.id, quantity - 1);
+    if (quantity > 0 && cartItemId) {
+      onUpdateQuantity(cartItemId, quantity - 1);
     }
   };
 

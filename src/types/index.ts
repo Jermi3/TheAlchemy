@@ -90,4 +90,5 @@ export interface SiteSettings {
   site_description: string;
   currency: string;
   currency_code: string;
+  cart_item_limit: number;
 }
