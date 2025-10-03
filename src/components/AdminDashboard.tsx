@@ -405,7 +405,6 @@ const AdminDashboard: React.FC = () => {
 
             {/* Discount Pricing Section */}
             <div className="mb-8">
-              <h3 className="text-lg font-playfair font-medium text-black mb-4">Discount Pricing</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-black mb-2">Discount Price</label>
@@ -430,25 +429,7 @@ const AdminDashboard: React.FC = () => {
                   </label>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-black mb-2">Discount Start Date</label>
-                  <input
-                    type="datetime-local"
-                    value={formData.discountStartDate || ''}
-                    onChange={(e) => setFormData({ ...formData, discountStartDate: e.target.value || undefined })}
-                    className="w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-black mb-2">Discount End Date</label>
-                  <input
-                    type="datetime-local"
-                    value={formData.discountEndDate || ''}
-                    onChange={(e) => setFormData({ ...formData, discountEndDate: e.target.value || undefined })}
-                    className="w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                  />
-                </div>
+              
               </div>
               <p className="text-sm text-gray-500 mt-2">
                 Leave dates empty for indefinite discount period. Discount will only be active if "Enable Discount" is checked and current time is within the date range.

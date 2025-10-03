@@ -49,39 +49,37 @@ const OrderManager: React.FC<OrderManagerProps> = ({ onBack }) => {
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
-  const audioContextRef = React.useRef<AudioContext | null>(null);
+  const audioRef = React.useRef<HTMLAudioElement | null>(null);
   const knownOrderIdsRef = React.useRef<Set<string>>(new Set());
 
   const playNotification = React.useCallback(() => {
-    try {
-      const AudioContextConstructor = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-      if (!AudioContextConstructor) return;
-
-      const context = audioContextRef.current ?? new AudioContextConstructor();
-      audioContextRef.current = context;
-
-      if (context.state === 'suspended') {
-        context.resume().catch(() => {});
-      }
-
-      const oscillator = context.createOscillator();
-      const gain = context.createGain();
-
-      oscillator.type = 'triangle';
-      oscillator.frequency.setValueAtTime(880, context.currentTime);
-
-      gain.gain.setValueAtTime(0.0001, context.currentTime);
-      gain.gain.linearRampToValueAtTime(0.03, context.currentTime + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.5);
-
-      oscillator.connect(gain);
-      gain.connect(context.destination);
-
-      oscillator.start();
-      oscillator.stop(context.currentTime + 0.5);
-    } catch (err) {
-      console.error('Notification audio error:', err);
+    const audio = audioRef.current;
+    if (!audio) {
+      console.warn('Notification audio element missing');
+      return;
     }
+
+    // reset to start for rapid successive plays
+    audio.currentTime = 0;
+    audio
+      .play()
+      .catch((err) => {
+        console.error('Notification audio error:', err);
+      });
+  }, []);
+
+  React.useEffect(() => {
+    if (!audioRef.current) {
+      const element = new Audio('/notif-sound.mp3');
+      element.preload = 'auto';
+      element.volume = 1;
+      audioRef.current = element;
+    }
+
+    return () => {
+      audioRef.current?.pause();
+      audioRef.current = null;
+    };
   }, []);
 
   const filteredOrders = useMemo(() => {
