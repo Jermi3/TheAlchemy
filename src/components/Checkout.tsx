@@ -17,7 +17,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack, tabl
   const [step, setStep] = useState<'details' | 'payment'>('details');
   const [customerName, setCustomerName] = useState('');
   const [contactNumber, setContactNumber] = useState('');
-  const [serviceType, setServiceType] = useState<ServiceType>('dine-in');
+  const [serviceType, setServiceType] = useState<ServiceType>(initialTableNumber ? 'dine-in' : 'pickup');
   const [tableNumber, setTableNumber] = useState(initialTableNumber || '');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('gcash');
   const [notes, setNotes] = useState('');
@@ -34,7 +34,6 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack, tabl
   React.useEffect(() => {
     if (initialTableNumber) {
       setTableNumber(initialTableNumber);
-      setServiceType('dine-in');
     }
   }, [initialTableNumber]);
 
@@ -259,15 +258,12 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack, tabl
                     { value: 'dine-in', label: 'Dine In', icon: '🪑' },
                     { value: 'pickup', label: 'Pickup', icon: '🚶' }
                   ].map((option) => {
-                    const isDisabled = isTableLocked && option.value !== 'dine-in';
+                    const isDisabled = false;
                     return (
                       <button
                         key={option.value}
                         type="button"
-                        onClick={() => {
-                          if (isDisabled) return;
-                          setServiceType(option.value as ServiceType);
-                        }}
+                        onClick={() => setServiceType(option.value as ServiceType)}
                         disabled={isDisabled}
                         className={`p-4 rounded-lg border-2 transition-all duration-200 ${
                           serviceType === option.value
