@@ -309,21 +309,18 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack, tabl
 
               {/* Dine-in Details */}
               {serviceType === 'dine-in' && (
-                <div>
-                  <label className="block text-sm font-medium text-alchemy-cream mb-2">Table Number *</label>
-                  <input
-                    type="text"
-                    value={tableNumber}
-                    onChange={(e) => setTableNumber(e.target.value)}
-                    readOnly={isTableLocked}
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-alchemy-gold focus:border-transparent transition-all duration-200 bg-white/5 text-alchemy-cream ${
-                      isTableLocked ? 'border-white/20 cursor-not-allowed text-alchemy-cream/60' : 'border-white/15'
-                    }`}
-                    placeholder="Enter your table number"
-                    required
-                  />
-                  {!isTableLocked && (
-                    <p className="text-xs text-alchemy-cream/60 mt-1">Let us know where you're seated so we can serve you quickly.</p>
+                <div className="rounded-xl border border-white/15 bg-white/5 px-4 py-4">
+                  {trimmedTableNumber ? (
+                    <>
+                      <p className="text-sm text-alchemy-cream/70">Serving at table</p>
+                      <p className="text-2xl font-playfair font-semibold text-alchemy-gold tracking-wider">Table {trimmedTableNumber}</p>
+                      <p className="text-xs text-alchemy-cream/50 mt-2">If this isn’t your table, please scan the QR code at your table to place an order.</p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm text-alchemy-cream/70 mb-2">No table detected</p>
+                      <p className="text-xs text-red-300">Please scan the QR code found on your table to place a dine-in order.</p>
+                    </>
                   )}
                 </div>
               )}

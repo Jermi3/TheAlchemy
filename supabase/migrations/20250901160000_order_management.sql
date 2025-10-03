@@ -26,10 +26,24 @@ GRANT USAGE, SELECT ON SEQUENCE order_code_seq TO anon, authenticated;
 CREATE OR REPLACE FUNCTION generate_order_code()
 RETURNS text AS $$
 DECLARE
-  seq_val bigint;
+  alphabet constant text := '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  candidate text;
+  token text;
 BEGIN
-  seq_val := nextval('order_code_seq');
-  RETURN 'RY-' || to_char(now(), 'YYMMDD') || '-' || lpad(seq_val::text, 5, '0');
+  LOOP
+    token := '';
+    FOR i IN 1..5 LOOP
+      token := token || substr(alphabet, floor(random() * length(alphabet))::int + 1, 1);
+    END LOOP;
+
+    candidate := 'AM-' || token;
+
+    EXIT WHEN NOT EXISTS (
+      SELECT 1 FROM orders WHERE order_code = candidate
+    );
+  END LOOP;
+
+  RETURN candidate;
 END;
 $$ LANGUAGE plpgsql;
 

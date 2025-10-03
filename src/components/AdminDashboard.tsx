@@ -252,39 +252,47 @@ const AdminDashboard: React.FC = () => {
   // Login Screen
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-md">
-          <div className="text-center mb-8">
-            <div className="mx-auto w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mb-4">
-              <Lock className="h-8 w-8 text-white" />
+      <div className="min-h-screen bg-gradient-to-br from-alchemy-night via-alchemy-emberDeep to-black flex items-center justify-center px-4 py-12">
+        <div className="w-full max-w-md alchemy-panel border border-white/10 rounded-3xl shadow-[0_40px_80px_-30px_rgba(0,0,0,0.9)] px-8 py-10">
+          <div className="text-center mb-10 space-y-3">
+            <div className="mx-auto w-16 h-16 rounded-full bg-white/10 border border-alchemy-gold/40 flex items-center justify-center shadow-lg shadow-black/40">
+              <Lock className="h-7 w-7 text-alchemy-gold" />
             </div>
-            <h1 className="text-2xl font-playfair font-semibold text-black">Admin Access</h1>
-            <p className="text-gray-600 mt-2">Enter password to access the admin dashboard</p>
+            <h1 className="text-3xl font-playfair font-semibold text-alchemy-gold tracking-wide">
+              The Alchemy Admin
+            </h1>
+            <p className="text-sm text-alchemy-cream/70 max-w-sm mx-auto">
+              Secure access for bar managers. Enter the secret passphrase to manage menu, payments, and live orders.
+            </p>
           </div>
-          
-          <form onSubmit={handleLogin}>
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-black mb-2">Password</label>
+
+          <form onSubmit={handleLogin} className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-alchemy-cream mb-2">Admin Passphrase</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                placeholder="Enter admin password"
+                className="w-full px-4 py-3 border border-white/15 bg-white/5 text-alchemy-cream rounded-lg focus:ring-2 focus:ring-alchemy-gold focus:border-transparent transition-all duration-200 placeholder:text-alchemy-cream/40"
+                placeholder="••••••••"
                 required
               />
               {loginError && (
-                <p className="text-red-500 text-sm mt-2">{loginError}</p>
+                <p className="text-red-400 text-sm mt-2">{loginError}</p>
               )}
             </div>
-            
+
             <button
               type="submit"
-              className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors duration-200 font-medium"
+              className="w-full inline-flex items-center justify-center space-x-2 py-3 rounded-lg bg-gradient-to-r from-alchemy-gold via-alchemy-copper to-alchemy-gold text-alchemy-night font-medium tracking-wide shadow-lg shadow-black/40 hover:from-alchemy-copper hover:to-alchemy-gold transition-all duration-200"
             >
-              Access Dashboard
+              <span>Unlock Dashboard</span>
             </button>
           </form>
+
+          <p className="text-xs text-alchemy-cream/50 text-center mt-8">
+            Need help? Contact the operations team to reset your passphrase.
+          </p>
         </div>
       </div>
     );
