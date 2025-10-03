@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useSearchParams } from 'react-router-dom';
 import { useCart } from './hooks/useCart';
 import Header from './components/Header';
 import SubNav from './components/SubNav';
@@ -8,20 +8,37 @@ import Cart from './components/Cart';
 import Checkout from './components/Checkout';
 import FloatingCartButton from './components/FloatingCartButton';
 import AdminDashboard from './components/AdminDashboard';
+import OrderTracker from './components/OrderTracker';
 import { useMenu } from './hooks/useMenu';
 
 function MainApp() {
   const cart = useCart();
   const { menuItems } = useMenu();
-  const [currentView, setCurrentView] = React.useState<'menu' | 'cart' | 'checkout'>('menu');
+  const [currentView, setCurrentView] = React.useState<'menu' | 'cart' | 'checkout' | 'track'>('menu');
   const [selectedCategory, setSelectedCategory] = React.useState<string>('all');
+  const [searchParams] = useSearchParams();
+  const [tableNumber, setTableNumber] = React.useState<string | null>(null);
+  const [lastOrderCode, setLastOrderCode] = React.useState<string | null>(null);
 
-  const handleViewChange = (view: 'menu' | 'cart' | 'checkout') => {
+  React.useEffect(() => {
+    const detectedTable = searchParams.get('table') || searchParams.get('tableNumber');
+    setTableNumber(detectedTable);
+  }, [searchParams]);
+
+  const handleViewChange = (view: 'menu' | 'cart' | 'checkout' | 'track') => {
+    if (view !== 'track') {
+      setLastOrderCode(null);
+    }
     setCurrentView(view);
   };
 
   const handleCategoryClick = (categoryId: string) => {
     setSelectedCategory(categoryId);
+  };
+
+  const goToTrack = (code?: string | null) => {
+    setLastOrderCode(code ?? null);
+    setCurrentView('track');
   };
 
   // Filter menu items based on selected category
@@ -30,13 +47,16 @@ function MainApp() {
     : menuItems.filter(item => item.category === selectedCategory);
 
   return (
-    <div className="min-h-screen bg-cream-50 font-inter">
+    <div className="min-h-screen bg-alchemy-night font-inter text-alchemy-cream">
       <Header 
         cartItemsCount={cart.getTotalItems()}
         onCartClick={() => handleViewChange('cart')}
         onMenuClick={() => handleViewChange('menu')}
+        onTrackOrder={() => goToTrack()}
       />
-      <SubNav selectedCategory={selectedCategory} onCategoryClick={handleCategoryClick} />
+      {currentView === 'menu' && (
+        <SubNav selectedCategory={selectedCategory} onCategoryClick={handleCategoryClick} />
+      )}
       
       {currentView === 'menu' && (
         <Menu 
@@ -44,6 +64,7 @@ function MainApp() {
           addToCart={cart.addToCart}
           cartItems={cart.cartItems}
           updateQuantity={cart.updateQuantity}
+          onTrackOrder={() => goToTrack()}
         />
       )}
       
@@ -64,9 +85,18 @@ function MainApp() {
           cartItems={cart.cartItems}
           totalPrice={cart.getTotalPrice()}
           onBack={() => handleViewChange('cart')}
+          tableNumber={tableNumber}
+          onOrderComplete={(code) => {
+            cart.clearCart();
+            goToTrack(code);
+          }}
         />
       )}
-      
+
+      {currentView === 'track' && (
+        <OrderTracker onBack={() => handleViewChange('menu')} initialCode={lastOrderCode} />
+      )}
+
       {currentView === 'menu' && (
         <FloatingCartButton 
           itemCount={cart.getTotalItems()}

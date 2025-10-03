@@ -136,7 +136,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
           type="url"
           value={currentImage || ''}
           onChange={(e) => onImageChange(e.target.value || undefined)}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+          className="w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
           placeholder="https://example.com/image.jpg"
           disabled={uploading}
         />

@@ -10,23 +10,23 @@ const SubNav: React.FC<SubNavProps> = ({ selectedCategory, onCategoryClick }) =>
   const { categories, loading } = useCategories();
 
   return (
-    <div className="sticky top-16 z-40 bg-white/90 backdrop-blur-md border-b border-ramen-sesame">
+    <div className="sticky top-20 z-40 bg-gradient-to-r from-alchemy-dusk/85 via-alchemy-emberDeep/65 to-alchemy-night/80 backdrop-blur-xl border-b border-white/10 shadow-[0_10px_20px_-18px_rgba(0,0,0,0.9)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center space-x-4 overflow-x-auto py-3 scrollbar-hide">
           {loading ? (
             <div className="flex space-x-4">
               {[1,2,3,4,5].map(i => (
-                <div key={i} className="h-8 w-20 bg-gray-200 rounded animate-pulse" />
+                <div key={i} className="h-8 w-20 bg-white/10 rounded animate-pulse" />
               ))}
             </div>
           ) : (
             <>
               <button
                 onClick={() => onCategoryClick('all')}
-                className={`px-3 py-1.5 rounded-full text-sm transition-colors duration-200 border ${
+                className={`px-4 py-1.5 rounded-full text-sm tracking-wide transition-colors duration-200 border ${
                   selectedCategory === 'all'
-                    ? 'bg-ramen-red text-white border-ramen-red'
-                    : 'bg-white text-gray-700 border-gray-300 hover:border-ramen-red'
+                    ? 'bg-alchemy-gold text-alchemy-night border-alchemy-gold shadow-lg shadow-black/40'
+                    : 'bg-transparent text-alchemy-cream border-white/15 hover:border-alchemy-gold/70'
                 }`}
               >
                 All
@@ -35,14 +35,14 @@ const SubNav: React.FC<SubNavProps> = ({ selectedCategory, onCategoryClick }) =>
                 <button
                   key={c.id}
                   onClick={() => onCategoryClick(c.id)}
-                  className={`px-3 py-1.5 rounded-full text-sm transition-colors duration-200 border flex items-center space-x-1 ${
+                  className={`px-4 py-1.5 rounded-full text-sm transition-colors duration-200 border flex items-center space-x-2 ${
                     selectedCategory === c.id
-                      ? 'bg-ramen-red text-white border-ramen-red'
-                      : 'bg-white text-gray-700 border-gray-300 hover:border-ramen-red'
+                      ? 'bg-alchemy-gold text-alchemy-night border-alchemy-gold shadow-lg shadow-black/40'
+                      : 'bg-transparent text-alchemy-cream border-white/15 hover:border-alchemy-gold/70'
                   }`}
                 >
-                  <span>{c.icon}</span>
-                  <span>{c.name}</span>
+                  <span className="text-lg">{c.icon}</span>
+                  <span className="whitespace-nowrap tracking-wide">{c.name}</span>
                 </button>
               ))}
             </>
@@ -54,5 +54,4 @@ const SubNav: React.FC<SubNavProps> = ({ selectedCategory, onCategoryClick }) =>
 };
 
 export default SubNav;
-
 

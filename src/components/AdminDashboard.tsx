@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Edit, Trash2, Save, X, ArrowLeft, Coffee, TrendingUp, Package, Users, Lock, FolderOpen, CreditCard, Settings } from 'lucide-react';
+import { Plus, Edit, Trash2, Save, X, ArrowLeft, Coffee, TrendingUp, Package, Users, Lock, FolderOpen, CreditCard, Settings, ClipboardList } from 'lucide-react';
 import { MenuItem, Variation, AddOn } from '../types';
 import { addOnCategories } from '../data/menuData';
 import { useMenu } from '../hooks/useMenu';
@@ -8,6 +8,7 @@ import ImageUpload from './ImageUpload';
 import CategoryManager from './CategoryManager';
 import PaymentMethodManager from './PaymentMethodManager';
 import SiteSettingsManager from './SiteSettingsManager';
+import OrderManager from './OrderManager';
 
 const AdminDashboard: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
@@ -17,7 +18,7 @@ const AdminDashboard: React.FC = () => {
   const [loginError, setLoginError] = useState('');
   const { menuItems, loading, addMenuItem, updateMenuItem, deleteMenuItem } = useMenu();
   const { categories } = useCategories();
-  const [currentView, setCurrentView] = useState<'dashboard' | 'items' | 'add' | 'edit' | 'categories' | 'payments' | 'settings'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'items' | 'add' | 'edit' | 'categories' | 'payments' | 'settings' | 'orders'>('dashboard');
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -232,7 +233,7 @@ const AdminDashboard: React.FC = () => {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === 'ClickEats@Admin!2025') {
+    if (password === 'TheAlchemy@Admin!2025') {
       setIsAuthenticated(true);
       localStorage.setItem('beracah_admin_auth', 'true');
       setLoginError('');
@@ -268,7 +269,7 @@ const AdminDashboard: React.FC = () => {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
                 placeholder="Enter admin password"
                 required
               />
@@ -348,7 +349,7 @@ const AdminDashboard: React.FC = () => {
                   type="text"
                   value={formData.name || ''}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
                   placeholder="Enter item name"
                 />
               </div>
@@ -359,7 +360,7 @@ const AdminDashboard: React.FC = () => {
                   type="number"
                   value={formData.basePrice || ''}
                   onChange={(e) => setFormData({ ...formData, basePrice: Number(e.target.value) })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
                   placeholder="0"
                 />
               </div>
@@ -369,7 +370,7 @@ const AdminDashboard: React.FC = () => {
                 <select
                   value={formData.category || ''}
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
                 >
                   {categories.map(cat => (
                     <option key={cat.id} value={cat.id}>{cat.name}</option>
@@ -412,7 +413,7 @@ const AdminDashboard: React.FC = () => {
                     type="number"
                     value={formData.discountPrice || ''}
                     onChange={(e) => setFormData({ ...formData, discountPrice: Number(e.target.value) || undefined })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
                     placeholder="Enter discount price"
                   />
                 </div>
@@ -435,7 +436,7 @@ const AdminDashboard: React.FC = () => {
                     type="datetime-local"
                     value={formData.discountStartDate || ''}
                     onChange={(e) => setFormData({ ...formData, discountStartDate: e.target.value || undefined })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
                   />
                 </div>
 
@@ -445,7 +446,7 @@ const AdminDashboard: React.FC = () => {
                     type="datetime-local"
                     value={formData.discountEndDate || ''}
                     onChange={(e) => setFormData({ ...formData, discountEndDate: e.target.value || undefined })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
                   />
                 </div>
               </div>
@@ -459,7 +460,7 @@ const AdminDashboard: React.FC = () => {
               <textarea
                 value={formData.description || ''}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 placeholder="Enter item description"
                 rows={3}
               />
@@ -888,6 +889,11 @@ const AdminDashboard: React.FC = () => {
     );
   }
 
+  // Orders View
+  if (currentView === 'orders') {
+    return <OrderManager onBack={() => setCurrentView('dashboard')} />;
+  }
+
   // Categories View
   if (currentView === 'categories') {
     return <CategoryManager onBack={() => setCurrentView('dashboard')} />;
@@ -934,7 +940,7 @@ const AdminDashboard: React.FC = () => {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-4">
               <Coffee className="h-8 w-8 text-black" />
-              <h1 className="text-2xl font-noto font-semibold text-black">ClickEats Admin</h1>
+              <h1 className="text-2xl font-noto font-semibold text-black">The Alchemy - Mobile Bar Admin</h1>
             </div>
             <div className="flex items-center space-x-4">
               <a
@@ -1024,6 +1030,13 @@ const AdminDashboard: React.FC = () => {
               >
                 <Package className="h-5 w-5 text-gray-400" />
                 <span className="font-medium text-gray-900">Manage Menu Items</span>
+              </button>
+              <button
+                onClick={() => setCurrentView('orders')}
+                className="w-full flex items-center space-x-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-colors duration-200"
+              >
+                <ClipboardList className="h-5 w-5 text-gray-400" />
+                <span className="font-medium text-gray-900">Order Management</span>
               </button>
               <button
                 onClick={() => setCurrentView('categories')}

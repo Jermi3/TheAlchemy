@@ -40,24 +40,43 @@ export interface CartItem extends MenuItem {
   totalPrice: number;
 }
 
+export interface OrderLineItem {
+  id: string;
+  name: string;
+  quantity: number;
+  totalPrice: number;
+  selectedVariation?: Variation;
+  selectedAddOns?: AddOn[];
+}
+
 export interface OrderData {
-  items: CartItem[];
+  items: OrderLineItem[];
   customerName: string;
   contactNumber: string;
   serviceType: 'dine-in' | 'pickup' | 'delivery';
+  tableNumber?: string;
   address?: string;
+  landmark?: string;
   pickupTime?: string;
-  // Dine-in specific fields
-  partySize?: number;
-  dineInTime?: string;
   paymentMethod: 'gcash' | 'maya' | 'bank-transfer';
-  referenceNumber?: string;
   total: number;
   notes?: string;
+  messengerPayload?: string;
+  status?: OrderStatus;
 }
 
 export type PaymentMethod = 'gcash' | 'maya' | 'bank-transfer';
 export type ServiceType = 'dine-in' | 'pickup' | 'delivery';
+
+export type OrderStatus = 'pending' | 'confirmed' | 'preparing' | 'ready' | 'completed' | 'cancelled';
+
+export interface Order extends OrderData {
+  id: string;
+  orderCode: string;
+  created_at: string;
+  updated_at: string;
+  status: OrderStatus;
+}
 
 // Site Settings Types
 export interface SiteSetting {

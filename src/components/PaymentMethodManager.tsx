@@ -159,7 +159,7 @@ const PaymentMethodManager: React.FC<PaymentMethodManagerProps> = ({ onBack }) =
                   type="text"
                   value={formData.name}
                   onChange={(e) => handleNameChange(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   placeholder="e.g., GCash, Maya, Bank Transfer"
                 />
               </div>
@@ -170,7 +170,7 @@ const PaymentMethodManager: React.FC<PaymentMethodManagerProps> = ({ onBack }) =
                   type="text"
                   value={formData.id}
                   onChange={(e) => setFormData({ ...formData, id: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   placeholder="kebab-case-id"
                   disabled={currentView === 'edit'}
                 />
@@ -188,7 +188,7 @@ const PaymentMethodManager: React.FC<PaymentMethodManagerProps> = ({ onBack }) =
                   type="text"
                   value={formData.account_number}
                   onChange={(e) => setFormData({ ...formData, account_number: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   placeholder="09XX XXX XXXX or Account: 1234-5678-9012"
                 />
               </div>
@@ -199,7 +199,7 @@ const PaymentMethodManager: React.FC<PaymentMethodManagerProps> = ({ onBack }) =
                   type="text"
                   value={formData.account_name}
                   onChange={(e) => setFormData({ ...formData, account_name: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   placeholder="M&C Bakehouse"
                 />
               </div>
@@ -217,7 +217,7 @@ const PaymentMethodManager: React.FC<PaymentMethodManagerProps> = ({ onBack }) =
                   type="number"
                   value={formData.sort_order}
                   onChange={(e) => setFormData({ ...formData, sort_order: Number(e.target.value) })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   placeholder="0"
                 />
                 <p className="text-xs text-gray-500 mt-1">
