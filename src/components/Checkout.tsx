@@ -396,12 +396,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack, tabl
           )}
 
           {/* Reference Number */}
-          <div className="bg-white/5 border border-white/10 rounded-lg p-4">
-            <h4 className="font-medium text-alchemy-cream mb-2">📸 Payment Proof Required</h4>
-            <p className="text-sm text-alchemy-cream/70">
-              After making your payment, please take a screenshot of your payment receipt and attach it when you send your order via Messenger. This helps us verify and process your order quickly.
-            </p>
-          </div>
+       
         </div>
 
         {/* Order Summary */}
