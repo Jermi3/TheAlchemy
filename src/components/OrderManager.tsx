@@ -215,10 +215,6 @@ const OrderManager: React.FC<OrderManagerProps> = ({ onBack }) => {
           <div className="space-y-6">
             {filteredOrders.map(order => {
               const isExpanded = expandedId === order.id;
-              const pickupDetails = order.serviceType === 'pickup'
-                ? (order.pickupTime || 'As soon as possible')
-                : undefined;
-
               return (
                 <div key={order.id} className="alchemy-panel rounded-2xl border border-white/10 overflow-hidden">
                   <div className="flex flex-col md:flex-row md:items-center justify-between px-6 py-5 gap-4 border-b border-white/10 bg-white/5">
@@ -239,11 +235,8 @@ const OrderManager: React.FC<OrderManagerProps> = ({ onBack }) => {
                       <h3 className="text-xl font-semibold text-alchemy-gold">{order.customerName}</h3>
                       <p className="text-sm text-alchemy-cream/60">Order Code: <span className="font-mono text-alchemy-cream">{order.orderCode}</span></p>
                       <p className="text-sm text-alchemy-cream/70">
-                        {order.serviceType === 'delivery' && 'Delivery'}
-                        {order.serviceType === 'pickup' && 'Pickup'}
-                        {order.serviceType === 'dine-in' && 'Dine-In'}
+                        {order.serviceType === 'pickup' ? 'Pickup' : 'Dine-In'}
                         {order.tableNumber ? ` • Table ${order.tableNumber}` : ''}
-                        {pickupDetails ? ` • ${pickupDetails}` : ''}
                       </p>
                     </div>
 
@@ -280,13 +273,6 @@ const OrderManager: React.FC<OrderManagerProps> = ({ onBack }) => {
                         <p className="font-medium text-alchemy-cream">Contact</p>
                         <p>{order.contactNumber}</p>
                       </div>
-                      {order.address && (
-                        <div>
-                          <p className="font-medium text-alchemy-cream">Address</p>
-                          <p>{order.address}</p>
-                          {order.landmark && <p className="mt-1 text-xs text-alchemy-cream/60">Landmark: {order.landmark}</p>}
-                        </div>
-                      )}
                       <div>
                         <p className="font-medium text-alchemy-cream">Payment Method</p>
                         <p className="capitalize">{order.paymentMethod.replace('-', ' ')}</p>

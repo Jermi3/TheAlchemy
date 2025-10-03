@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Clock } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { CartItem, PaymentMethod, ServiceType, OrderData } from '../types';
 import { usePaymentMethods } from '../hooks/usePaymentMethods';
 import { supabase } from '../lib/supabase';
@@ -18,10 +18,6 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack, tabl
   const [customerName, setCustomerName] = useState('');
   const [contactNumber, setContactNumber] = useState('');
   const [serviceType, setServiceType] = useState<ServiceType>('dine-in');
-  const [address, setAddress] = useState('');
-  const [landmark, setLandmark] = useState('');
-  const [pickupTime, setPickupTime] = useState('5-10');
-  const [customTime, setCustomTime] = useState('');
   const [tableNumber, setTableNumber] = useState(initialTableNumber || '');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('gcash');
   const [notes, setNotes] = useState('');
@@ -58,7 +54,6 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack, tabl
 
   const buildMessengerMessage = (items: OrderData['items'], orderCode?: string) => {
     const serviceLabel = serviceType.charAt(0).toUpperCase() + serviceType.slice(1);
-    const pickupLabel = pickupTime === 'custom' ? customTime : `${pickupTime} minutes`;
     const itemLines = items
       .map(item => {
         let line = `• ${item.name}`;
@@ -83,17 +78,12 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack, tabl
       `👤 Customer: ${customerName}`,
       `📞 Contact: ${contactNumber}`,
       `📍 Service: ${serviceLabel}`,
-      serviceType === 'delivery'
-        ? `🏠 Address: ${address}${landmark ? `\n🗺️ Landmark: ${landmark}` : ''}`
-        : null,
-      serviceType === 'pickup' ? `⏰ Pickup Time: ${pickupLabel}` : null,
       serviceType === 'dine-in' ? `🪑 Table: ${trimmedTableNumber || 'Not specified'}` : null,
       '',
       '📋 ORDER DETAILS:',
       itemLines,
       '',
       `💰 TOTAL: ₱${totalPrice}`,
-      serviceType === 'delivery' ? '🛵 DELIVERY FEE:' : null,
       '',
       `💳 Payment: ${selectedPaymentMethod?.name || paymentMethod}`,
       '📸 Payment Screenshot: Please attach your payment receipt screenshot',
@@ -128,9 +118,6 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack, tabl
         contactNumber,
         serviceType,
         tableNumber: serviceType === 'dine-in' ? trimmedTableNumber || undefined : undefined,
-        address: serviceType === 'delivery' ? address : undefined,
-        landmark: serviceType === 'delivery' ? landmark || undefined : undefined,
-        pickupTime: serviceType === 'pickup' ? (pickupTime === 'custom' ? customTime : `${pickupTime} minutes`) : undefined,
         paymentMethod,
         total: totalPrice,
         notes: notes || undefined,
@@ -146,9 +133,6 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack, tabl
           contact_number: payload.contactNumber,
           service_type: payload.serviceType,
           table_number: payload.tableNumber ?? null,
-          address: payload.address ?? null,
-          landmark: payload.landmark ?? null,
-          pickup_time: payload.pickupTime ?? null,
           notes: payload.notes ?? null,
           payment_method: payload.paymentMethod,
           total: payload.total,
@@ -188,8 +172,6 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack, tabl
   };
 
   const isDetailsValid = customerName && contactNumber && 
-    (serviceType !== 'delivery' || address) && 
-    (serviceType !== 'pickup' || (pickupTime !== 'custom' || customTime)) &&
     (serviceType !== 'dine-in' || trimmedTableNumber);
 
   if (step === 'details') {
@@ -272,11 +254,10 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack, tabl
               {/* Service Type */}
               <div>
                 <label className="block text-sm font-medium text-alchemy-cream mb-3">Service Type *</label>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 gap-3">
                   {[
                     { value: 'dine-in', label: 'Dine In', icon: '🪑' },
-                    { value: 'pickup', label: 'Pickup', icon: '🚶' },
-                    { value: 'delivery', label: 'Delivery', icon: '🛵' }
+                    { value: 'pickup', label: 'Pickup', icon: '🚶' }
                   ].map((option) => {
                     const isDisabled = isTableLocked && option.value !== 'dine-in';
                     return (
@@ -323,76 +304,6 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack, tabl
                     </>
                   )}
                 </div>
-              )}
-
-              {/* Pickup Time Selection */}
-              {serviceType === 'pickup' && (
-                <div>
-                  <label className="block text-sm font-medium text-alchemy-cream mb-3">Pickup Time *</label>
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-2 gap-3">
-                      {[
-                        { value: '5-10', label: '5-10 minutes' },
-                        { value: '15-20', label: '15-20 minutes' },
-                        { value: '25-30', label: '25-30 minutes' },
-                        { value: 'custom', label: 'Custom Time' }
-                      ].map((option) => (
-                        <button
-                          key={option.value}
-                          type="button"
-                          onClick={() => setPickupTime(option.value)}
-                          className={`p-3 rounded-lg border-2 transition-all duration-200 text-sm ${
-                            pickupTime === option.value
-                              ? 'border-alchemy-gold bg-alchemy-gold text-alchemy-night shadow-lg shadow-black/40'
-                              : 'border-white/15 bg-white/5 text-alchemy-cream hover:border-alchemy-gold/60'
-                          }`}
-                        >
-                          <Clock className="h-4 w-4 mx-auto mb-1" />
-                          {option.label}
-                        </button>
-                      ))}
-                    </div>
-                    
-                    {pickupTime === 'custom' && (
-                      <input
-                        type="text"
-                        value={customTime}
-                        onChange={(e) => setCustomTime(e.target.value)}
-                        className="w-full px-4 py-3 border border-white/15 bg-white/5 text-alchemy-cream rounded-lg focus:ring-2 focus:ring-alchemy-gold focus:border-transparent transition-all duration-200 placeholder:text-alchemy-cream/40"
-                        placeholder="e.g., 45 minutes, 1 hour, 2:30 PM"
-                        required
-                      />
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Delivery Address */}
-              {serviceType === 'delivery' && (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium text-alchemy-cream mb-2">Delivery Address *</label>
-                    <textarea
-                      value={address}
-                      onChange={(e) => setAddress(e.target.value)}
-                      className="w-full px-4 py-3 border border-white/15 bg-white/5 text-alchemy-cream rounded-lg focus:ring-2 focus:ring-alchemy-gold focus:border-transparent transition-all duration-200 placeholder:text-alchemy-cream/40"
-                      placeholder="Enter your complete delivery address"
-                      rows={3}
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-alchemy-cream mb-2">Landmark</label>
-                    <input
-                      type="text"
-                      value={landmark}
-                      onChange={(e) => setLandmark(e.target.value)}
-                      className="w-full px-4 py-3 border border-white/15 bg-white/5 text-alchemy-cream rounded-lg focus:ring-2 focus:ring-alchemy-gold focus:border-transparent transition-all duration-200 placeholder:text-alchemy-cream/40"
-                      placeholder="e.g., Near McDonald's, Beside 7-Eleven, In front of school"
-                    />
-                  </div>
-                </>
               )}
 
               {/* Special Notes */}
@@ -507,15 +418,9 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack, tabl
               <p className="text-sm text-alchemy-cream/70">Name: {customerName}</p>
               <p className="text-sm text-alchemy-cream/70">Contact: {contactNumber}</p>
               <p className="text-sm text-alchemy-cream/70">Service: {serviceType.charAt(0).toUpperCase() + serviceType.slice(1)}</p>
-              {serviceType === 'delivery' && (
-                <>
-                  <p className="text-sm text-alchemy-cream/70">Address: {address}</p>
-                  {landmark && <p className="text-sm text-alchemy-cream/70">Landmark: {landmark}</p>}
-                </>
-              )}
               {serviceType === 'pickup' && (
                 <p className="text-sm text-alchemy-cream/70">
-                  Pickup Time: {pickupTime === 'custom' ? customTime : `${pickupTime} minutes`}
+                  Pickup orders will be prepared right away.
                 </p>
               )}
               {serviceType === 'dine-in' && (

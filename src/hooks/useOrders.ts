@@ -9,9 +9,6 @@ type OrderRow = {
   contact_number: string;
   service_type: string;
   table_number: string | null;
-  address: string | null;
-  landmark: string | null;
-  pickup_time: string | null;
   notes: string | null;
   payment_method: string;
   total: number;
@@ -29,9 +26,6 @@ const mapRowToOrder = (row: OrderRow): Order => ({
   contactNumber: row.contact_number,
   serviceType: row.service_type as Order['serviceType'],
   tableNumber: row.table_number ?? undefined,
-  address: row.address ?? undefined,
-  landmark: row.landmark ?? undefined,
-  pickupTime: row.pickup_time ?? undefined,
   paymentMethod: row.payment_method as Order['paymentMethod'],
   total: Number(row.total),
   status: row.status as OrderStatus,

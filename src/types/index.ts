@@ -53,11 +53,8 @@ export interface OrderData {
   items: OrderLineItem[];
   customerName: string;
   contactNumber: string;
-  serviceType: 'dine-in' | 'pickup' | 'delivery';
+  serviceType: 'dine-in' | 'pickup';
   tableNumber?: string;
-  address?: string;
-  landmark?: string;
-  pickupTime?: string;
   paymentMethod: 'gcash' | 'maya' | 'bank-transfer';
   total: number;
   notes?: string;
@@ -66,7 +63,7 @@ export interface OrderData {
 }
 
 export type PaymentMethod = 'gcash' | 'maya' | 'bank-transfer';
-export type ServiceType = 'dine-in' | 'pickup' | 'delivery';
+export type ServiceType = 'dine-in' | 'pickup';
 
 export type OrderStatus = 'pending' | 'confirmed' | 'preparing' | 'ready' | 'completed' | 'cancelled';
 
