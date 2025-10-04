@@ -1,6 +1,24 @@
 import React, { useState } from 'react';
-import { Plus, Edit, Trash2, Save, X, ArrowLeft, Coffee, TrendingUp, Package, Users, Lock, FolderOpen, CreditCard, Settings, ClipboardList } from 'lucide-react';
-import { MenuItem, Variation, AddOn } from '../types';
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Save,
+  X,
+  ArrowLeft,
+  Coffee,
+  TrendingUp,
+  Package,
+  Users,
+  Lock,
+  FolderOpen,
+  CreditCard,
+  Settings,
+  ClipboardList,
+  ShieldCheck,
+  Loader2,
+} from 'lucide-react';
+import type { AdminComponentKey, MenuItem, Variation, AddOn } from '../types';
 import { addOnCategories } from '../data/menuData';
 import { useMenu } from '../hooks/useMenu';
 import { useCategories, Category } from '../hooks/useCategories';
@@ -9,16 +27,49 @@ import CategoryManager from './CategoryManager';
 import PaymentMethodManager from './PaymentMethodManager';
 import SiteSettingsManager from './SiteSettingsManager';
 import OrderManager from './OrderManager';
+import StaffManager from './StaffManager';
+import { supabase } from '../lib/supabase';
+import { useStaffAccess } from '../hooks/useStaff';
+
+type AdminView =
+  | 'dashboard'
+  | 'items'
+  | 'add'
+  | 'edit'
+  | 'categories'
+  | 'payments'
+  | 'settings'
+  | 'orders'
+  | 'staff';
+
+const VIEW_COMPONENT_MAP: Record<AdminView, AdminComponentKey> = {
+  dashboard: 'dashboard',
+  items: 'items',
+  add: 'items',
+  edit: 'items',
+  categories: 'categories',
+  payments: 'payments',
+  settings: 'settings',
+  orders: 'orders',
+  staff: 'staff',
+};
 
 const AdminDashboard: React.FC = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return localStorage.getItem('beracah_admin_auth') === 'true';
-  });
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
-  const { menuItems, loading, addMenuItem, updateMenuItem, deleteMenuItem } = useMenu();
+  const [authLoading, setAuthLoading] = useState(false);
+  const {
+    profile,
+    loading: staffLoading,
+    error: staffError,
+    canView,
+    canManage,
+  } = useStaffAccess();
+  const isAuthenticated = !!profile && canView('dashboard');
+  const { menuItems, loading: menuLoading, addMenuItem, updateMenuItem, deleteMenuItem } = useMenu();
   const { categories } = useCategories();
-  const [currentView, setCurrentView] = useState<'dashboard' | 'items' | 'add' | 'edit' | 'categories' | 'payments' | 'settings' | 'orders'>('dashboard');
+  const [currentView, setCurrentView] = useState<AdminView>('dashboard');
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -34,7 +85,44 @@ const AdminDashboard: React.FC = () => {
     addOns: []
   });
 
+  React.useEffect(() => {
+    if (!isAuthenticated) {
+      setCurrentView('dashboard');
+      return;
+    }
+
+    const component = VIEW_COMPONENT_MAP[currentView];
+    if (!canView(component)) {
+      setCurrentView('dashboard');
+    }
+  }, [isAuthenticated, currentView, canView]);
+
+  const ensureAccess = (view: AdminView, mode: 'view' | 'manage' = 'view') => {
+    const component = VIEW_COMPONENT_MAP[view];
+    const allowed = mode === 'manage' ? canManage(component) : canView(component);
+    if (!allowed) {
+      alert('You do not have permission to access this section.');
+      return false;
+    }
+    return true;
+  };
+
+  const navigateTo = (view: AdminView, mode: 'view' | 'manage' = 'view') => {
+    if (!ensureAccess(view, mode)) return;
+    setCurrentView(view);
+  };
+
+  const canViewItems = canView('items');
+  const canManageItems = canManage('items');
+  const canViewOrders = canView('orders');
+  const canViewStaff = canView('staff');
+  const canManageStaff = canManage('staff');
+  const canManageCategories = canManage('categories');
+  const canManagePayments = canManage('payments');
+  const canManageSettings = canManage('settings');
+
   const handleAddItem = () => {
+    if (!ensureAccess('add', 'manage')) return;
     setCurrentView('add');
     const defaultCategory = categories.length > 0 ? categories[0].id : 'dim-sum';
     setFormData({
@@ -50,12 +138,14 @@ const AdminDashboard: React.FC = () => {
   };
 
   const handleEditItem = (item: MenuItem) => {
+    if (!ensureAccess('edit', 'manage')) return;
     setEditingItem(item);
     setFormData(item);
     setCurrentView('edit');
   };
 
   const handleDeleteItem = async (id: string) => {
+    if (!ensureAccess('items', 'manage')) return;
     if (confirm('Are you sure you want to delete this item? This action cannot be undone.')) {
       try {
         setIsProcessing(true);
@@ -69,6 +159,7 @@ const AdminDashboard: React.FC = () => {
   };
 
   const handleSaveItem = async () => {
+    if (!ensureAccess(editingItem ? 'edit' : 'add', 'manage')) return;
     if (!formData.name || !formData.description || !formData.basePrice) {
       alert('Please fill in all required fields');
       return;
@@ -80,7 +171,7 @@ const AdminDashboard: React.FC = () => {
       } else {
         await addMenuItem(formData as Omit<MenuItem, 'id'>);
       }
-      setCurrentView('items');
+      navigateTo('items');
       setEditingItem(null);
     } catch (error) {
       alert('Failed to save item');
@@ -88,12 +179,17 @@ const AdminDashboard: React.FC = () => {
   };
 
   const handleCancel = () => {
-    setCurrentView(currentView === 'add' || currentView === 'edit' ? 'items' : 'dashboard');
+    if (currentView === 'add' || currentView === 'edit') {
+      navigateTo('items');
+    } else {
+      navigateTo('dashboard');
+    }
     setEditingItem(null);
     setSelectedItems([]);
   };
 
   const handleBulkRemove = async () => {
+    if (!ensureAccess('items', 'manage')) return;
     if (selectedItems.length === 0) {
       alert('Please select items to delete');
       return;
@@ -125,6 +221,7 @@ const AdminDashboard: React.FC = () => {
     }
   };
   const handleBulkCategoryChange = async (newCategoryId: string) => {
+    if (!ensureAccess('items', 'manage')) return;
     if (selectedItems.length === 0) {
       alert('Please select items to update');
       return;
@@ -153,6 +250,7 @@ const AdminDashboard: React.FC = () => {
   };
 
   const handleSelectItem = (itemId: string) => {
+    if (!canManage('items')) return;
     setSelectedItems(prev => 
       prev.includes(itemId) 
         ? prev.filter(id => id !== itemId)
@@ -161,6 +259,7 @@ const AdminDashboard: React.FC = () => {
   };
 
   const handleSelectAll = () => {
+    if (!canManage('items')) return;
     if (selectedItems.length === menuItems.length) {
       setSelectedItems([]);
       setShowBulkActions(false);
@@ -231,26 +330,59 @@ const AdminDashboard: React.FC = () => {
     count: menuItems.filter(item => item.category === cat.id).length
   }));
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (password === 'TheAlchemy@Admin!2025') {
-      setIsAuthenticated(true);
-      localStorage.setItem('beracah_admin_auth', 'true');
-      setLoginError('');
-    } else {
-      setLoginError('Invalid password');
+  const handleLogin = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setLoginError('');
+    setAuthLoading(true);
+
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+
+      setEmail('');
+      setPassword('');
+    } catch (err) {
+      console.error('Login failed', err);
+      setLoginError(err instanceof Error ? err.message : 'Unable to sign in');
+    } finally {
+      setAuthLoading(false);
     }
   };
 
-  const handleLogout = () => {
-    setIsAuthenticated(false);
-    localStorage.removeItem('beracah_admin_auth');
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setEmail('');
     setPassword('');
+    setSelectedItems([]);
+    setFormData({
+      name: '',
+      description: '',
+      basePrice: 0,
+      category: 'hot-coffee',
+      popular: false,
+      available: true,
+      variations: [],
+      addOns: [],
+    });
     setCurrentView('dashboard');
   };
 
-  // Login Screen
-  if (!isAuthenticated) {
+  if (staffLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!profile) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-alchemy-night via-alchemy-emberDeep to-black flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-md alchemy-panel border border-white/10 rounded-3xl shadow-[0_40px_80px_-30px_rgba(0,0,0,0.9)] px-8 py-10">
@@ -262,43 +394,91 @@ const AdminDashboard: React.FC = () => {
               The Alchemy Admin
             </h1>
             <p className="text-sm text-alchemy-cream/70 max-w-sm mx-auto">
-              Secure access for bar managers. Enter the secret passphrase to manage menu, payments, and live orders.
+              Sign in with your staff credentials to manage the bar.
             </p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-alchemy-cream mb-2">Admin Passphrase</label>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-alchemy-cream">Email</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                className="w-full px-4 py-3 border border-white/15 bg-white/5 text-alchemy-cream rounded-lg focus:ring-2 focus:ring-alchemy-gold focus:border-transparent transition-all duration-200 placeholder:text-alchemy-cream/40"
+                placeholder="name@example.com"
+                required
+                autoComplete="email"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-alchemy-cream">Password</label>
               <input
                 type="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(event) => setPassword(event.target.value)}
                 className="w-full px-4 py-3 border border-white/15 bg-white/5 text-alchemy-cream rounded-lg focus:ring-2 focus:ring-alchemy-gold focus:border-transparent transition-all duration-200 placeholder:text-alchemy-cream/40"
                 placeholder="••••••••"
                 required
+                autoComplete="current-password"
               />
-              {loginError && (
-                <p className="text-red-400 text-sm mt-2">{loginError}</p>
-              )}
             </div>
+
+            {loginError && (
+              <p className="text-red-400 text-sm">{loginError}</p>
+            )}
+            {staffError && (
+              <p className="text-red-300 text-sm">{staffError}</p>
+            )}
 
             <button
               type="submit"
-              className="w-full inline-flex items-center justify-center space-x-2 py-3 rounded-lg bg-gradient-to-r from-alchemy-gold via-alchemy-copper to-alchemy-gold text-alchemy-night font-medium tracking-wide shadow-lg shadow-black/40 hover:from-alchemy-copper hover:to-alchemy-gold transition-all duration-200"
+              disabled={authLoading}
+              className="w-full inline-flex items-center justify-center space-x-2 py-3 rounded-lg bg-gradient-to-r from-alchemy-gold via-alchemy-copper to-alchemy-gold text-alchemy-night font-medium tracking-wide shadow-lg shadow-black/40 hover:from-alchemy-copper hover:to-alchemy-gold transition-all duration-200 disabled:opacity-50"
             >
-              <span>Unlock Dashboard</span>
+              {authLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Signing in...</span>
+                </>
+              ) : (
+                <span>Unlock Dashboard</span>
+              )}
             </button>
           </form>
 
           <p className="text-xs text-alchemy-cream/50 text-center mt-8">
-            Need help? Contact the operations team to reset your passphrase.
+            Need access? Contact an owner to add your account.
           </p>
         </div>
       </div>
     );
   }
 
-  if (loading) {
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-alchemy-night via-alchemy-emberDeep to-black flex items-center justify-center px-4 py-12">
+        <div className="w-full max-w-md alchemy-panel border border-white/10 rounded-3xl shadow-[0_40px_80px_-30px_rgba(0,0,0,0.9)] px-8 py-10 text-center space-y-6">
+          <Lock className="h-10 w-10 text-alchemy-gold mx-auto" />
+          <h1 className="text-3xl font-playfair font-semibold text-alchemy-gold tracking-wide">
+            Access Restricted
+          </h1>
+          <p className="text-sm text-alchemy-cream/70">
+            Your account is active but does not have permission to view the dashboard. Contact an owner to update your staff permissions.
+          </p>
+          <button
+            onClick={handleLogout}
+            className="inline-flex items-center justify-center space-x-2 py-3 px-6 rounded-lg bg-gradient-to-r from-alchemy-gold via-alchemy-copper to-alchemy-gold text-alchemy-night font-medium tracking-wide shadow-lg shadow-black/40 hover:from-alchemy-copper hover:to-alchemy-gold transition-all duration-200"
+          >
+            <span>Sign Out</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (menuLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -563,7 +743,7 @@ const AdminDashboard: React.FC = () => {
             <div className="flex items-center justify-between h-16">
               <div className="flex items-center space-x-4">
                 <button
-                  onClick={() => setCurrentView('dashboard')}
+                  onClick={() => navigateTo('dashboard')}
                   className="flex items-center space-x-2 text-gray-600 hover:text-black transition-colors duration-200"
                 >
                   <ArrowLeft className="h-5 w-5" />
@@ -587,7 +767,8 @@ const AdminDashboard: React.FC = () => {
                 )}
                 <button
                   onClick={handleAddItem}
-                  className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors duration-200"
+                  disabled={!canManageItems}
+                  className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors duration-200 disabled:opacity-50"
                 >
                   <Plus className="h-4 w-4" />
                   <span>Add New Item</span>
@@ -714,7 +895,8 @@ const AdminDashboard: React.FC = () => {
                           type="checkbox"
                           checked={selectedItems.includes(item.id)}
                           onChange={() => handleSelectItem(item.id)}
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          disabled={!canManage('items')}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
                         />
                       </td>
                       <td className="px-6 py-4">
@@ -764,14 +946,14 @@ const AdminDashboard: React.FC = () => {
                         <div className="flex items-center space-x-2">
                           <button
                             onClick={() => handleEditItem(item)}
-                            disabled={isProcessing}
+                            disabled={isProcessing || !canManage('items')}
                             className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors duration-200"
                           >
                             <Edit className="h-4 w-4" />
                           </button>
                           <button
                             onClick={() => handleDeleteItem(item.id)}
-                            disabled={isProcessing}
+                            disabled={isProcessing || !canManage('items')}
                             className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors duration-200"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -794,21 +976,22 @@ const AdminDashboard: React.FC = () => {
                         type="checkbox"
                         checked={selectedItems.includes(item.id)}
                         onChange={() => handleSelectItem(item.id)}
-                        className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                        disabled={!canManage('items')}
+                        className="rounded border-gray-300 text-green-600 focus:ring-green-500 disabled:opacity-50"
                       />
                       <span className="text-sm text-gray-600">Select</span>
                     </label>
                     <div className="flex items-center space-x-2">
                       <button
                         onClick={() => handleEditItem(item)}
-                        disabled={isProcessing}
+                        disabled={isProcessing || !canManage('items')}
                         className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors duration-200"
                       >
                         <Edit className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => handleDeleteItem(item.id)}
-                        disabled={isProcessing}
+                        disabled={isProcessing || !canManage('items')}
                         className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors duration-200"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -880,17 +1063,21 @@ const AdminDashboard: React.FC = () => {
 
   // Orders View
   if (currentView === 'orders') {
-    return <OrderManager onBack={() => setCurrentView('dashboard')} />;
+    return <OrderManager onBack={() => navigateTo('dashboard')} />;
   }
 
   // Categories View
   if (currentView === 'categories') {
-    return <CategoryManager onBack={() => setCurrentView('dashboard')} />;
+    return <CategoryManager onBack={() => navigateTo('dashboard')} />;
   }
 
   // Payment Methods View
   if (currentView === 'payments') {
-    return <PaymentMethodManager onBack={() => setCurrentView('dashboard')} />;
+    return <PaymentMethodManager onBack={() => navigateTo('dashboard')} />;
+  }
+
+  if (currentView === 'staff') {
+    return <StaffManager onBack={() => navigateTo('dashboard')} canManage={canManage('staff')} />;
   }
 
   // Site Settings View
@@ -902,7 +1089,7 @@ const AdminDashboard: React.FC = () => {
             <div className="flex items-center justify-between h-16">
               <div className="flex items-center space-x-4">
                 <button
-                  onClick={() => setCurrentView('dashboard')}
+                  onClick={() => navigateTo('dashboard')}
                   className="flex items-center space-x-2 text-gray-600 hover:text-black transition-colors duration-200"
                 >
                   <ArrowLeft className="h-5 w-5" />
@@ -1006,48 +1193,69 @@ const AdminDashboard: React.FC = () => {
           <div className="bg-white rounded-xl shadow-sm p-6">
             <h3 className="text-lg font-playfair font-medium text-black mb-4">Quick Actions</h3>
             <div className="space-y-3">
-              <button
-                onClick={handleAddItem}
-                className="w-full flex items-center space-x-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-colors duration-200"
-              >
-                <Plus className="h-5 w-5 text-gray-400" />
-                <span className="font-medium text-gray-900">Add New Menu Item</span>
-              </button>
-              <button
-                onClick={() => setCurrentView('items')}
-                className="w-full flex items-center space-x-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-colors duration-200"
-              >
-                <Package className="h-5 w-5 text-gray-400" />
-                <span className="font-medium text-gray-900">Manage Menu Items</span>
-              </button>
-              <button
-                onClick={() => setCurrentView('orders')}
-                className="w-full flex items-center space-x-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-colors duration-200"
-              >
-                <ClipboardList className="h-5 w-5 text-gray-400" />
-                <span className="font-medium text-gray-900">Order Management</span>
-              </button>
-              <button
-                onClick={() => setCurrentView('categories')}
-                className="w-full flex items-center space-x-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-colors duration-200"
-              >
-                <FolderOpen className="h-5 w-5 text-gray-400" />
-                <span className="font-medium text-gray-900">Manage Categories</span>
-              </button>
-              <button
-                onClick={() => setCurrentView('payments')}
-                className="w-full flex items-center space-x-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-colors duration-200"
-              >
-                <CreditCard className="h-5 w-5 text-gray-400" />
-                <span className="font-medium text-gray-900">Payment Methods</span>
-              </button>
-              <button
-                onClick={() => setCurrentView('settings')}
-                className="w-full flex items-center space-x-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-colors duration-200"
-              >
-                <Settings className="h-5 w-5 text-gray-400" />
-                <span className="font-medium text-gray-900">Site Settings</span>
-              </button>
+              {canManageItems && (
+                <button
+                  onClick={handleAddItem}
+                  className="w-full flex items-center space-x-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-colors duration-200"
+                >
+                  <Plus className="h-5 w-5 text-gray-400" />
+                  <span className="font-medium text-gray-900">Add New Menu Item</span>
+                </button>
+              )}
+              {canViewItems && (
+                <button
+                  onClick={() => navigateTo('items')}
+                  className="w-full flex items-center space-x-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-colors duration-200"
+                >
+                  <Package className="h-5 w-5 text-gray-400" />
+                  <span className="font-medium text-gray-900">Manage Menu Items</span>
+                </button>
+              )}
+              {canViewOrders && (
+                <button
+                  onClick={() => navigateTo('orders')}
+                  className="w-full flex items-center space-x-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-colors duration-200"
+                >
+                  <ClipboardList className="h-5 w-5 text-gray-400" />
+                  <span className="font-medium text-gray-900">Order Management</span>
+                </button>
+              )}
+              {canManageCategories && (
+                <button
+                  onClick={() => navigateTo('categories', 'manage')}
+                  className="w-full flex items-center space-x-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-colors duration-200"
+                >
+                  <FolderOpen className="h-5 w-5 text-gray-400" />
+                  <span className="font-medium text-gray-900">Manage Categories</span>
+                </button>
+              )}
+              {canManagePayments && (
+                <button
+                  onClick={() => navigateTo('payments', 'manage')}
+                  className="w-full flex items-center space-x-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-colors duration-200"
+                >
+                  <CreditCard className="h-5 w-5 text-gray-400" />
+                  <span className="font-medium text-gray-900">Payment Methods</span>
+                </button>
+              )}
+              {canManageSettings && (
+                <button
+                  onClick={() => navigateTo('settings', 'manage')}
+                  className="w-full flex items-center space-x-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-colors duration-200"
+                >
+                  <Settings className="h-5 w-5 text-gray-400" />
+                  <span className="font-medium text-gray-900">Site Settings</span>
+                </button>
+              )}
+              {canViewStaff && (
+                <button
+                  onClick={() => navigateTo('staff', canManageStaff ? 'manage' : 'view')}
+                  className="w-full flex items-center space-x-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-colors duration-200"
+                >
+                  <ShieldCheck className="h-5 w-5 text-gray-400" />
+                  <span className="font-medium text-gray-900">Staff Management</span>
+                </button>
+              )}
             </div>
           </div>
 

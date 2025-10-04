@@ -198,6 +198,123 @@ export type Database = {
           updated_at?: string;
         };
       };
+      orders: {
+        Row: {
+          id: string;
+          order_code: string;
+          customer_name: string;
+          contact_number: string;
+          service_type: string;
+          table_number: string | null;
+          address: string | null;
+          landmark: string | null;
+          pickup_time: string | null;
+          notes: string | null;
+          payment_method: string;
+          total: number;
+          status: string;
+          line_items: unknown;
+          messenger_payload: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          order_code?: string;
+          customer_name: string;
+          contact_number: string;
+          service_type: string;
+          table_number?: string | null;
+          address?: string | null;
+          landmark?: string | null;
+          pickup_time?: string | null;
+          notes?: string | null;
+          payment_method: string;
+          total: number;
+          status?: string;
+          line_items: unknown;
+          messenger_payload?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          order_code?: string;
+          customer_name?: string;
+          contact_number?: string;
+          service_type?: string;
+          table_number?: string | null;
+          address?: string | null;
+          landmark?: string | null;
+          pickup_time?: string | null;
+          notes?: string | null;
+          payment_method?: string;
+          total?: number;
+          status?: string;
+          line_items?: unknown;
+          messenger_payload?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      staff_profiles: {
+        Row: {
+          id: string;
+          auth_user_id: string | null;
+          email: string;
+          display_name: string;
+          role: 'owner' | 'manager' | 'staff';
+          active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          auth_user_id?: string | null;
+          email: string;
+          display_name: string;
+          role?: 'owner' | 'manager' | 'staff';
+          active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          auth_user_id?: string | null;
+          email?: string;
+          display_name?: string;
+          role?: 'owner' | 'manager' | 'staff';
+          active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      staff_permissions: {
+        Row: {
+          staff_id: string;
+          component: 'dashboard' | 'items' | 'orders' | 'categories' | 'payments' | 'settings' | 'staff';
+          can_view: boolean;
+          can_manage: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          staff_id: string;
+          component: 'dashboard' | 'items' | 'orders' | 'categories' | 'payments' | 'settings' | 'staff';
+          can_view?: boolean;
+          can_manage?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          staff_id?: string;
+          component?: 'dashboard' | 'items' | 'orders' | 'categories' | 'payments' | 'settings' | 'staff';
+          can_view?: boolean;
+          can_manage?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
     };
   };
 };

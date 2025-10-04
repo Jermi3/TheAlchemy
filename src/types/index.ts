@@ -92,3 +92,32 @@ export interface SiteSettings {
   currency_code: string;
   cart_item_limit: number;
 }
+
+export type StaffRole = 'owner' | 'manager' | 'staff';
+
+export type AdminComponentKey =
+  | 'dashboard'
+  | 'items'
+  | 'orders'
+  | 'categories'
+  | 'payments'
+  | 'settings'
+  | 'staff';
+
+export interface StaffPermission {
+  component: AdminComponentKey;
+  canView: boolean;
+  canManage: boolean;
+}
+
+export interface StaffProfile {
+  id: string;
+  authUserId?: string | null;
+  email: string;
+  displayName: string;
+  role: StaffRole;
+  active: boolean;
+  permissions: StaffPermission[];
+  createdAt: string;
+  updatedAt: string;
+}
