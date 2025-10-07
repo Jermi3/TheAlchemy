@@ -48,12 +48,27 @@ export const useOrders = () => {
       const { data, error: fetchError } = await supabase
         .from('orders')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: true }); // Changed to ascending for FIFO
 
       if (fetchError) throw fetchError;
 
       const formatted = (data as OrderRow[] | null)?.map(mapRowToOrder) ?? [];
-      setOrders(formatted);
+      
+      // Sort: active orders first (FIFO), completed orders at bottom
+      const sortedOrders = formatted.sort((a, b) => {
+        const aCompleted = a.status === 'completed';
+        const bCompleted = b.status === 'completed';
+        
+        // If both completed or both active, maintain chronological order
+        if (aCompleted === bCompleted) {
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        }
+        
+        // Active orders come before completed orders
+        return aCompleted ? 1 : -1;
+      });
+      
+      setOrders(sortedOrders);
       setError(null);
     } catch (err) {
       console.error('Error fetching orders:', err);
@@ -110,6 +125,25 @@ export const useOrders = () => {
     }
   }, []);
 
+  const removeBulkOrders = useCallback(async (orderIds: string[]) => {
+    try {
+      setUpdatingId('bulk-delete');
+      const { error: deleteError } = await supabase
+        .from('orders')
+        .delete()
+        .in('id', orderIds);
+
+      if (deleteError) throw deleteError;
+
+      setOrders(prev => prev.filter(order => !orderIds.includes(order.id)));
+    } catch (err) {
+      console.error('Error bulk deleting orders:', err);
+      throw err;
+    } finally {
+      setUpdatingId(null);
+    }
+  }, []);
+
   useEffect(() => {
     fetchOrders();
 
@@ -134,6 +168,7 @@ export const useOrders = () => {
     updatingId,
     updateOrderStatus,
     removeOrder,
+    removeBulkOrders,
     refetch: fetchOrders,
   };
 };

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { ArrowLeft, Loader2, RefreshCw, Trash2, ClipboardList } from 'lucide-react';
+import { ArrowLeft, Loader2, RefreshCw, Trash2, ClipboardList, Download, CheckSquare, Square } from 'lucide-react';
 import { useOrders } from '../hooks/useOrders';
 import { OrderStatus } from '../types';
 
@@ -45,10 +45,11 @@ const statusBadgeClass = (status: OrderStatus) => {
 };
 
 const OrderManager: React.FC<OrderManagerProps> = ({ onBack }) => {
-  const { orders, loading, error, updatingId, updateOrderStatus, removeOrder, refetch } = useOrders();
+  const { orders, loading, error, updatingId, updateOrderStatus, removeOrder, removeBulkOrders, refetch } = useOrders();
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
   const audioRef = React.useRef<HTMLAudioElement | null>(null);
   const knownOrderIdsRef = React.useRef<Set<string>>(new Set());
 
@@ -111,9 +112,118 @@ const OrderManager: React.FC<OrderManagerProps> = ({ onBack }) => {
     setActionError(null);
     try {
       await removeOrder(orderId);
+      // Remove from selection if it was selected
+      setSelectedOrders(prev => {
+        const next = new Set(prev);
+        next.delete(orderId);
+        return next;
+      });
     } catch (err) {
       setActionError(err instanceof Error ? err.message : 'Failed to delete order');
     }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedOrders.size === 0) return;
+    if (!confirm(`Remove ${selectedOrders.size} selected order(s) from the dashboard?`)) return;
+    setActionError(null);
+    try {
+      await removeBulkOrders(Array.from(selectedOrders));
+      setSelectedOrders(new Set());
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Failed to delete selected orders');
+    }
+  };
+
+  const handleToggleSelect = (orderId: string) => {
+    setSelectedOrders(prev => {
+      const next = new Set(prev);
+      if (next.has(orderId)) {
+        next.delete(orderId);
+      } else {
+        next.add(orderId);
+      }
+      return next;
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (selectedOrders.size === filteredOrders.length) {
+      // Deselect all
+      setSelectedOrders(new Set());
+    } else {
+      // Select all filtered orders
+      setSelectedOrders(new Set(filteredOrders.map(order => order.id)));
+    }
+  };
+
+  const handleExportCSV = () => {
+    if (orders.length === 0) {
+      setActionError('No orders to export');
+      return;
+    }
+
+    // CSV header
+    const headers = [
+      'Order Code',
+      'Customer Name',
+      'Contact Number',
+      'Service Type',
+      'Table Number',
+      'Payment Method',
+      'Status',
+      'Total',
+      'Notes',
+      'Created At',
+      'Updated At',
+      'Items'
+    ];
+
+    // CSV rows
+    const rows = orders.map(order => {
+      const itemsText = order.items.map(item => {
+        let text = `${item.name} x${item.quantity}`;
+        if (item.selectedVariation) {
+          text += ` (${item.selectedVariation.name})`;
+        }
+        if (item.selectedAddOns && item.selectedAddOns.length > 0) {
+          text += ` + ${item.selectedAddOns.map(a => a.name).join(', ')}`;
+        }
+        return text;
+      }).join('; ');
+
+      return [
+        order.orderCode,
+        order.customerName,
+        order.contactNumber,
+        order.serviceType,
+        order.tableNumber || '',
+        order.paymentMethod,
+        order.status,
+        order.total.toFixed(2),
+        order.notes || '',
+        new Date(order.created_at).toLocaleString(),
+        new Date(order.updated_at).toLocaleString(),
+        `"${itemsText}"` // Quote to handle commas in items
+      ];
+    });
+
+    // Combine into CSV content
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.join(','))
+    ].join('\n');
+
+    // Create blob and download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `orders_export_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   React.useEffect(() => {
@@ -142,6 +252,14 @@ const OrderManager: React.FC<OrderManagerProps> = ({ onBack }) => {
             <span>Dashboard</span>
           </button>
           <div className="flex items-center space-x-3">
+            <button
+              onClick={handleExportCSV}
+              disabled={orders.length === 0}
+              className="flex items-center space-x-2 px-4 py-2 rounded-lg border border-white/10 hover:border-alchemy-gold/60 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Download className="h-4 w-4" />
+              <span>Export CSV</span>
+            </button>
             <button
               onClick={() => refetch()}
               className="flex items-center space-x-2 px-4 py-2 rounded-lg border border-white/10 hover:border-alchemy-gold/60 transition-colors duration-200"
@@ -190,6 +308,40 @@ const OrderManager: React.FC<OrderManagerProps> = ({ onBack }) => {
           ))}
         </div>
 
+        {/* Bulk Actions Bar */}
+        {filteredOrders.length > 0 && (
+          <div className="alchemy-panel rounded-xl p-4 border border-white/10 flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={handleSelectAll}
+                className="flex items-center space-x-2 px-4 py-2 rounded-lg border border-white/10 hover:border-alchemy-gold/60 transition-colors duration-200"
+              >
+                {selectedOrders.size === filteredOrders.length ? (
+                  <CheckSquare className="h-4 w-4" />
+                ) : (
+                  <Square className="h-4 w-4" />
+                )}
+                <span>
+                  {selectedOrders.size === filteredOrders.length ? 'Deselect All' : 'Select All'}
+                </span>
+              </button>
+              <span className="text-sm text-alchemy-cream/70">
+                {selectedOrders.size} of {filteredOrders.length} selected
+              </span>
+            </div>
+            {selectedOrders.size > 0 && (
+              <button
+                onClick={handleBulkDelete}
+                disabled={updatingId === 'bulk-delete'}
+                className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-red-500/20 border border-red-500/40 text-red-300 hover:bg-red-500/30 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Trash2 className="h-4 w-4" />
+                <span>Delete Selected ({selectedOrders.size})</span>
+              </button>
+            )}
+          </div>
+        )}
+
         {actionError && (
           <div className="bg-red-500/15 border border-red-500/40 text-red-200 px-4 py-3 rounded-xl">
             {actionError}
@@ -215,32 +367,47 @@ const OrderManager: React.FC<OrderManagerProps> = ({ onBack }) => {
           <div className="space-y-6">
             {filteredOrders.map(order => {
               const isExpanded = expandedId === order.id;
+              const isSelected = selectedOrders.has(order.id);
               return (
-                <div key={order.id} className="alchemy-panel rounded-2xl border border-white/10 overflow-hidden">
+                <div key={order.id} className={`alchemy-panel rounded-2xl border overflow-hidden transition-all ${isSelected ? 'border-alchemy-gold/60 shadow-lg shadow-alchemy-gold/10' : 'border-white/10'}`}>
                   <div className="flex flex-col md:flex-row md:items-center justify-between px-6 py-5 gap-4 border-b border-white/10 bg-white/5">
-                    <div className="space-y-1">
-                      <div className="flex items-center space-x-3">
-                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${statusBadgeClass(order.status)}`}>
-                          {STATUS_LABELS[order.status]}
-                        </span>
-                        <span className="text-sm text-alchemy-cream/60">
-                          {new Date(order.created_at).toLocaleString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </span>
+                    <div className="flex items-start space-x-4 flex-1">
+                      {/* Checkbox */}
+                      <button
+                        onClick={() => handleToggleSelect(order.id)}
+                        className="mt-1 flex-shrink-0"
+                      >
+                        {isSelected ? (
+                          <CheckSquare className="h-5 w-5 text-alchemy-gold" />
+                        ) : (
+                          <Square className="h-5 w-5 text-alchemy-cream/40 hover:text-alchemy-gold transition-colors" />
+                        )}
+                      </button>
+                      
+                      <div className="space-y-1 flex-1">
+                        <div className="flex items-center space-x-3">
+                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${statusBadgeClass(order.status)}`}>
+                            {STATUS_LABELS[order.status]}
+                          </span>
+                          <span className="text-sm text-alchemy-cream/60">
+                            {new Date(order.created_at).toLocaleString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </span>
+                        </div>
+                        <h3 className="text-xl font-semibold text-alchemy-gold">{order.customerName}</h3>
+                        <p className="text-sm text-alchemy-cream/60">Order Code: <span className="font-mono text-alchemy-cream">{order.orderCode}</span></p>
+                        <p className="text-sm text-alchemy-cream/70">
+                          {order.serviceType === 'pickup' ? 'Pickup' : 'Dine-In'}
+                          {order.tableNumber ? ` • Table ${order.tableNumber}` : ''}
+                        </p>
                       </div>
-                      <h3 className="text-xl font-semibold text-alchemy-gold">{order.customerName}</h3>
-                      <p className="text-sm text-alchemy-cream/60">Order Code: <span className="font-mono text-alchemy-cream">{order.orderCode}</span></p>
-                      <p className="text-sm text-alchemy-cream/70">
-                        {order.serviceType === 'pickup' ? 'Pickup' : 'Dine-In'}
-                        {order.tableNumber ? ` • Table ${order.tableNumber}` : ''}
-                      </p>
                     </div>
 
-                    <div className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-3 md:ml-0 ml-9">
                       <select
                         value={order.status}
                         onChange={(e) => handleStatusChange(order.id, e.target.value as OrderStatus)}
