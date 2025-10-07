@@ -35,11 +35,13 @@ const roleOptions: { label: string; value: StaffRole; description: string }[] = 
 
 const StaffManager: React.FC<StaffManagerProps> = ({ onBack, canManage }) => {
   const [formOpen, setFormOpen] = useState(false);
+  const [createAuthUser, setCreateAuthUser] = useState(true);
   const [formState, setFormState] = useState({
     email: '',
     displayName: '',
     role: 'staff' as StaffRole,
     authUserId: '',
+    password: '',
   });
 
   const {
@@ -67,7 +69,8 @@ const StaffManager: React.FC<StaffManagerProps> = ({ onBack, canManage }) => {
   }, [staff]);
 
   const resetForm = () => {
-    setFormState({ email: '', displayName: '', role: 'staff', authUserId: '' });
+    setFormState({ email: '', displayName: '', role: 'staff', authUserId: '', password: '' });
+    setCreateAuthUser(true);
   };
 
   const handleCreateStaff = async (event: React.FormEvent) => {
@@ -79,17 +82,31 @@ const StaffManager: React.FC<StaffManagerProps> = ({ onBack, canManage }) => {
       return;
     }
 
+    // Validate based on workflow
+    if (createAuthUser && !formState.password) {
+      alert('Password is required when creating a new login account');
+      return;
+    }
+
+    if (createAuthUser && formState.password.length < 6) {
+      alert('Password must be at least 6 characters');
+      return;
+    }
+
     try {
       await createStaff({
         email: formState.email,
         displayName: formState.displayName,
         role: formState.role,
         authUserId: formState.authUserId.trim() || undefined,
+        createAuthUser,
+        password: formState.password || undefined,
       });
       resetForm();
       setFormOpen(false);
     } catch (err) {
       console.error('Create staff error', err);
+      alert(err instanceof Error ? err.message : 'Failed to create staff member');
     }
   };
 
@@ -268,23 +285,80 @@ const StaffManager: React.FC<StaffManagerProps> = ({ onBack, canManage }) => {
                 </p>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-alchemy-cream flex items-center space-x-2">
-                  <span>Auth User ID</span>
-                  <span className="text-xs text-alchemy-cream/50">(optional)</span>
-                </label>
-                <input
-                  type="text"
-                  value={formState.authUserId}
-                  onChange={(event) => setFormState((prev) => ({ ...prev, authUserId: event.target.value }))}
-                  className="w-full px-4 py-2 rounded-lg border border-white/20 bg-white/5 text-alchemy-cream focus:ring-2 focus:ring-alchemy-gold focus:border-transparent"
-                  placeholder="Link existing Supabase user"
-                  disabled={isSubmitting}
-                />
-                <p className="text-xs text-alchemy-cream/60">
-                  Leave blank to link later once the user signs up with this email.
-                </p>
+              {/* Workflow Selection */}
+              <div className="md:col-span-2 space-y-3 border-t border-white/10 pt-4">
+                <label className="text-sm font-medium text-alchemy-cream">Account Creation Method</label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <label className="flex items-start space-x-3 cursor-pointer p-4 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 transition-colors">
+                    <input
+                      type="radio"
+                      checked={createAuthUser}
+                      onChange={() => setCreateAuthUser(true)}
+                      className="mt-1 text-alchemy-gold focus:ring-alchemy-gold"
+                      disabled={isSubmitting}
+                    />
+                    <div className="flex-1">
+                      <div className="text-sm font-medium text-alchemy-cream">Create Login Account</div>
+                      <div className="text-xs text-alchemy-cream/60 mt-1">
+                        Create a full account with email & password. User can login immediately.
+                      </div>
+                    </div>
+                  </label>
+                  <label className="flex items-start space-x-3 cursor-pointer p-4 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 transition-colors">
+                    <input
+                      type="radio"
+                      checked={!createAuthUser}
+                      onChange={() => setCreateAuthUser(false)}
+                      className="mt-1 text-alchemy-gold focus:ring-alchemy-gold"
+                      disabled={isSubmitting}
+                    />
+                    <div className="flex-1">
+                      <div className="text-sm font-medium text-alchemy-cream">Invite Only</div>
+                      <div className="text-xs text-alchemy-cream/60 mt-1">
+                        Create profile without login. User signs up separately later.
+                      </div>
+                    </div>
+                  </label>
+                </div>
               </div>
+
+              {/* Conditional Fields Based on Workflow */}
+              {createAuthUser ? (
+                <div className="md:col-span-2 space-y-2">
+                  <label className="text-sm font-medium text-alchemy-cream">Password *</label>
+                  <input
+                    type="password"
+                    value={formState.password}
+                    onChange={(event) => setFormState((prev) => ({ ...prev, password: event.target.value }))}
+                    className="w-full px-4 py-2 rounded-lg border border-white/20 bg-white/5 text-alchemy-cream focus:ring-2 focus:ring-alchemy-gold focus:border-transparent"
+                    placeholder="Create a secure password (min 6 characters)"
+                    disabled={isSubmitting}
+                    autoComplete="new-password"
+                    minLength={6}
+                  />
+                  <p className="text-xs text-alchemy-cream/60">
+                    This user will be able to login with their email and this password immediately after creation.
+                  </p>
+                </div>
+              ) : (
+                <div className="md:col-span-2 space-y-2">
+                  <label className="text-sm font-medium text-alchemy-cream flex items-center space-x-2">
+                    <span>Auth User ID</span>
+                    <span className="text-xs text-alchemy-cream/50">(optional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formState.authUserId}
+                    onChange={(event) => setFormState((prev) => ({ ...prev, authUserId: event.target.value }))}
+                    className="w-full px-4 py-2 rounded-lg border border-white/20 bg-white/5 text-alchemy-cream focus:ring-2 focus:ring-alchemy-gold focus:border-transparent"
+                    placeholder="Enter existing Supabase Auth User ID (or leave blank)"
+                    disabled={isSubmitting}
+                  />
+                  <p className="text-xs text-alchemy-cream/60">
+                    Leave blank to create an invite-only profile, or enter an existing Supabase Auth User ID to link them.
+                  </p>
+                </div>
+              )}
 
               <div className="md:col-span-2 flex items-center justify-end space-x-3">
                 <button

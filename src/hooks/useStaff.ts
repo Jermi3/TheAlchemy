@@ -159,6 +159,8 @@ interface CreateStaffPayload {
   displayName: string;
   role: StaffRole;
   authUserId?: string;
+  createAuthUser?: boolean;
+  password?: string;
 }
 
 interface UpdateStaffPayload {
@@ -228,16 +230,56 @@ export const useStaffManagement = () => {
   }, [loadStaff]);
 
   const createStaff = useCallback(
-    async ({ email, displayName, role, authUserId }: CreateStaffPayload) => {
+    async ({ email, displayName, role, authUserId, createAuthUser, password }: CreateStaffPayload) => {
       setUpdating('create');
       try {
+        // Workflow 1: Create auth user + staff profile via Edge Function
+        if (createAuthUser && password) {
+          const { data: session } = await supabase.auth.getSession();
+          if (!session.session) {
+            throw new Error('You must be logged in to create staff members');
+          }
+
+          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+          const response = await fetch(
+            `${supabaseUrl}/functions/v1/create-staff-with-auth`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.session.access_token}`,
+              },
+              body: JSON.stringify({
+                email,
+                password,
+                displayName,
+                role,
+              }),
+            }
+          );
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to create staff with auth');
+          }
+
+          const result = await response.json();
+          const newProfile = mapRowsToProfile(result.staff, result.staff.permissions || []);
+          setStaff((prev) => [...prev, newProfile]);
+          setError(null);
+          return newProfile;
+        }
+
+        // Workflow 2: Create staff profile only (invite-first or link existing)
+        const staffId = crypto.randomUUID();
         const { data, error: insertError } = await supabase
           .from('staff_profiles')
           .insert({
+            id: staffId,
             email,
             display_name: displayName,
             role,
-            auth_user_id: authUserId ?? null,
+            auth_user_id: authUserId || null,
           })
           .select()
           .single();
