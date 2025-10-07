@@ -83,7 +83,9 @@ const Cart: React.FC<CartProps> = ({
                     ).join(', ')}
                   </p>
                 )}
-                <p className="text-lg font-semibold text-alchemy-gold">₱{item.totalPrice} each</p>
+                <p className="text-lg font-semibold text-alchemy-gold">
+                  {item.totalPrice === 0 ? 'Free' : `₱${item.totalPrice}`} each
+                </p>
               </div>
               
               <div className="flex items-center space-x-4 ml-4">
@@ -104,7 +106,9 @@ const Cart: React.FC<CartProps> = ({
                 </div>
                 
                 <div className="text-right">
-                  <p className="text-lg font-semibold text-alchemy-gold">₱{item.totalPrice * item.quantity}</p>
+                  <p className="text-lg font-semibold text-alchemy-gold">
+                    {item.totalPrice * item.quantity === 0 ? 'Free' : `₱${item.totalPrice * item.quantity}`}
+                  </p>
                 </div>
                 
                 <button
@@ -155,7 +159,9 @@ const Cart: React.FC<CartProps> = ({
 
         <div className="flex items-center justify-between text-2xl font-playfair font-semibold text-alchemy-gold mb-6">
           <span>Total:</span>
-          <span>₱{parseFloat(getTotalPrice() || 0).toFixed(2)}</span>
+          <span>
+            {getTotalPrice() === 0 ? 'Free' : `₱${(getTotalPrice() || 0).toFixed(2)}`}
+          </span>
         </div>
         
         <button

@@ -128,7 +128,7 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
           
           {/* Badges */}
           <div className="absolute top-3 left-3 flex flex-col gap-2">
-            {item.isOnDiscount && item.discountPrice && (
+            {item.isOnDiscount && item.discountPrice !== undefined && item.discountPrice < item.basePrice && (
               <div className="bg-gradient-to-r from-alchemy-gold to-alchemy-copper text-alchemy-night text-xs font-bold px-3 py-1.5 rounded-full shadow-lg animate-pulse">
                 SALE
               </div>
@@ -147,7 +147,7 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
           )}
           
           {/* Discount Percentage Badge */}
-          {item.isOnDiscount && item.discountPrice && (
+          {item.isOnDiscount && item.discountPrice !== undefined && item.basePrice > 0 && (
             <div className="absolute bottom-3 right-3 bg-alchemy-night/85 backdrop-blur-sm text-alchemy-gold text-xs font-bold px-2 py-1 rounded-full shadow-lg border border-white/10">
               {Math.round(((item.basePrice - item.discountPrice) / item.basePrice) * 100)}% OFF
             </div>
@@ -172,23 +172,25 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
           {/* Pricing Section */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex-1">
-              {item.isOnDiscount && item.discountPrice ? (
+              {item.isOnDiscount && item.discountPrice !== undefined ? (
                 <div className="space-y-1">
                   <div className="flex items-center space-x-2">
                     <span className="text-2xl font-bold text-alchemy-gold">
-                      ₱{item.discountPrice.toFixed(2)}
+                      {item.discountPrice === 0 ? 'Free' : `₱${item.discountPrice.toFixed(2)}`}
                     </span>
                     <span className="text-sm text-alchemy-cream/50 line-through">
-                      ₱{item.basePrice.toFixed(2)}
+                      {item.basePrice === 0 ? 'Free' : `₱${item.basePrice.toFixed(2)}`}
                     </span>
                   </div>
-                  <div className="text-xs text-alchemy-cream/60">
-                    Save ₱{(item.basePrice - item.discountPrice).toFixed(2)}
-                  </div>
+                  {item.discountPrice > 0 && item.basePrice > 0 && (
+                    <div className="text-xs text-alchemy-cream/60">
+                      Save ₱{(item.basePrice - item.discountPrice).toFixed(2)}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="text-2xl font-bold text-alchemy-gold">
-                  ₱{item.basePrice.toFixed(2)}
+                  {item.basePrice === 0 ? 'Free' : `₱${item.basePrice.toFixed(2)}`}
                 </div>
               )}
               
@@ -289,7 +291,10 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
                           <span className="font-medium text-alchemy-cream">{variation.name}</span>
                         </div>
                         <span className="text-alchemy-gold font-semibold">
-                          ₱{((item.effectivePrice || item.basePrice) + variation.price).toFixed(2)}
+                          {(() => {
+                            const price = (item.effectivePrice || item.basePrice) + variation.price;
+                            return price === 0 ? 'Free' : `₱${price.toFixed(2)}`;
+                          })()}
                         </span>
                       </label>
                     ))}
@@ -369,7 +374,9 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
               <div className="border-t border-white/10 pt-4 mb-6">
                 <div className="flex items-center justify-between text-2xl font-bold text-alchemy-gold">
                   <span>Total:</span>
-                  <span className="text-alchemy-gold">₱{calculatePrice().toFixed(2)}</span>
+                  <span className="text-alchemy-gold">
+                    {calculatePrice() === 0 ? 'Free' : `₱${calculatePrice().toFixed(2)}`}
+                  </span>
                 </div>
               </div>
 
@@ -378,7 +385,9 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
                 className="w-full bg-gradient-to-r from-alchemy-gold via-alchemy-copper to-alchemy-gold text-alchemy-night py-4 rounded-xl hover:from-alchemy-copper hover:to-alchemy-gold transition-all duration-200 font-semibold flex items-center justify-center space-x-2 shadow-lg shadow-black/30 hover:shadow-xl transform hover:scale-105"
               >
                 <ShoppingCart className="h-5 w-5" />
-                <span>Add to Cart - ₱{calculatePrice().toFixed(2)}</span>
+                <span>
+                  Add to Cart - {calculatePrice() === 0 ? 'Free' : `₱${calculatePrice().toFixed(2)}`}
+                </span>
               </button>
             </div>
           </div>

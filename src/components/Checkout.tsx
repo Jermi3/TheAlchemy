@@ -72,7 +72,8 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack, tabl
             .join(', ');
           line += ` + ${addOnsText}`;
         }
-        line += ` x${item.quantity} - ₱${(item.totalPrice * item.quantity).toFixed(2)}`;
+        const lineTotal = item.totalPrice * item.quantity;
+        line += ` x${item.quantity} - ${lineTotal === 0 ? 'Free' : `₱${lineTotal.toFixed(2)}`}`;
         return line;
       })
       .join('\n');
@@ -89,7 +90,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack, tabl
       '📋 ORDER DETAILS:',
       itemLines,
       '',
-      `💰 TOTAL: ₱${totalPrice}`,
+      `💰 TOTAL: ${totalPrice === 0 ? 'Free' : `₱${totalPrice}`}`,
       '',
       `💳 Payment: ${selectedPaymentMethod?.name || paymentMethod}`,
       '📸 Payment Screenshot: Please attach your payment receipt screenshot',
@@ -231,9 +232,13 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack, tabl
                         Add-ons: {item.selectedAddOns.map(addOn => addOn.name).join(', ')}
                       </p>
                     )}
-                    <p className="text-sm text-alchemy-cream/60">₱{item.totalPrice} x {item.quantity}</p>
+                    <p className="text-sm text-alchemy-cream/60">
+                      {item.totalPrice === 0 ? 'Free' : `₱${item.totalPrice}`} x {item.quantity}
+                    </p>
                   </div>
-                  <span className="font-semibold text-alchemy-gold">₱{item.totalPrice * item.quantity}</span>
+                  <span className="font-semibold text-alchemy-gold">
+                    {item.totalPrice * item.quantity === 0 ? 'Free' : `₱${item.totalPrice * item.quantity}`}
+                  </span>
                 </div>
               ))}
             </div>
@@ -241,7 +246,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack, tabl
             <div className="border-t border-white/10 pt-4">
               <div className="flex items-center justify-between text-2xl font-playfair font-semibold text-alchemy-gold">
                 <span>Total:</span>
-                <span>₱{totalPrice}</span>
+                <span>{totalPrice === 0 ? 'Free' : `₱${totalPrice}`}</span>
               </div>
             </div>
           </div>
@@ -404,7 +409,9 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack, tabl
                   <p className="text-sm text-alchemy-cream/70 mb-1">{selectedPaymentMethod.name}</p>
                   <p className="font-mono text-alchemy-gold font-medium">{selectedPaymentMethod.account_number}</p>
                   <p className="text-sm text-alchemy-cream/70 mb-3">Account Name: {selectedPaymentMethod.account_name}</p>
-                  <p className="text-xl font-semibold text-alchemy-gold">Amount: ₱{totalPrice}</p>
+                  <p className="text-xl font-semibold text-alchemy-gold">
+                    Amount: {totalPrice === 0 ? 'Free' : `₱${totalPrice}`}
+                  </p>
                 </div>
                 <div className="flex-shrink-0">
                   <img 
@@ -474,9 +481,13 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack, tabl
                       ).join(', ')}
                     </p>
                   )}
-                  <p className="text-sm text-alchemy-cream/70">₱{item.totalPrice} x {item.quantity}</p>
+                  <p className="text-sm text-alchemy-cream/70">
+                    {item.totalPrice === 0 ? 'Free' : `₱${item.totalPrice}`} x {item.quantity}
+                  </p>
                 </div>
-                <span className="font-semibold text-alchemy-gold">₱{item.totalPrice * item.quantity}</span>
+                <span className="font-semibold text-alchemy-gold">
+                  {item.totalPrice * item.quantity === 0 ? 'Free' : `₱${item.totalPrice * item.quantity}`}
+                </span>
               </div>
             ))}
           </div>
@@ -484,7 +495,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack, tabl
           <div className="border-t border-white/10 pt-4 mb-6">
             <div className="flex items-center justify-between text-2xl font-playfair font-semibold text-alchemy-gold">
               <span>Total:</span>
-              <span>₱{totalPrice}</span>
+              <span>{totalPrice === 0 ? 'Free' : `₱${totalPrice}`}</span>
             </div>
           </div>
 

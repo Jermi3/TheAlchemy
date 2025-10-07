@@ -160,7 +160,7 @@ const AdminDashboard: React.FC = () => {
 
   const handleSaveItem = async () => {
     if (!ensureAccess(editingItem ? 'edit' : 'add', 'manage')) return;
-    if (!formData.name || !formData.description || !formData.basePrice) {
+    if (!formData.name || !formData.description || formData.basePrice === undefined || formData.basePrice === null) {
       alert('Please fill in all required fields');
       return;
     }
@@ -910,13 +910,23 @@ const AdminDashboard: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 text-sm font-medium text-gray-900">
                         <div className="flex flex-col">
-                          {item.isOnDiscount && item.discountPrice ? (
+                          {item.isOnDiscount && item.discountPrice !== undefined ? (
                             <>
-                              <span className="text-red-600 font-semibold">₱{item.discountPrice}</span>
-                              <span className="text-gray-500 line-through text-xs">₱{item.basePrice}</span>
+                              <span className="text-red-600 font-semibold">
+                                {item.discountPrice === 0 ? 'Free' : `₱${item.discountPrice}`}
+                              </span>
+                              <span className="text-gray-500 line-through text-xs">
+                                {item.basePrice === 0 ? 'Free' : `₱${item.basePrice}`}
+                              </span>
                             </>
                           ) : (
-                            <span>₱{item.basePrice}</span>
+                            <span className="flex items-center gap-2">
+                              {item.basePrice === 0 ? (
+                                <span className="text-green-600 font-semibold">Free</span>
+                              ) : (
+                                `₱${item.basePrice}`
+                              )}
+                            </span>
                           )}
                         </div>
                       </td>
@@ -1016,13 +1026,21 @@ const AdminDashboard: React.FC = () => {
                     <div>
                       <span className="text-gray-500">Price:</span>
                       <span className="ml-1 font-medium text-gray-900">
-                        {item.isOnDiscount && item.discountPrice ? (
-                          <span className="text-red-600">₱{item.discountPrice}</span>
+                        {item.isOnDiscount && item.discountPrice !== undefined ? (
+                          <>
+                            <span className="text-red-600">
+                              {item.discountPrice === 0 ? 'Free' : `₱${item.discountPrice}`}
+                            </span>
+                            <span className="text-gray-500 line-through text-xs ml-1">
+                              {item.basePrice === 0 ? 'Free' : `₱${item.basePrice}`}
+                            </span>
+                          </>
                         ) : (
-                          `₱${item.basePrice}`
-                        )}
-                        {item.isOnDiscount && item.discountPrice && (
-                          <span className="text-gray-500 line-through text-xs ml-1">₱{item.basePrice}</span>
+                          item.basePrice === 0 ? (
+                            <span className="text-green-600 font-semibold">Free</span>
+                          ) : (
+                            `₱${item.basePrice}`
+                          )
                         )}
                       </span>
                     </div>
