@@ -25,7 +25,7 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
   pending: 'Pending',
   confirmed: 'Confirmed',
   preparing: 'Preparing',
-  ready: 'Ready for Pickup',
+  ready: 'Ready',
   completed: 'Completed',
   cancelled: 'Cancelled',
 };
@@ -204,7 +204,7 @@ const OrderTracker: React.FC<OrderTrackerProps> = ({ onBack, initialCode }) => {
                 )}
                 {order.service_type === 'pickup' && order.pickup_time && (
                   <div>
-                    <p className="font-medium text-alchemy-cream">Pickup Time</p>
+                    <p className="font-medium text-alchemy-cream">Pick-up Time</p>
                     <p>{order.pickup_time}</p>
                   </div>
                 )}

@@ -58,50 +58,6 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack, tabl
     setStep('payment');
   };
 
-  const buildMessengerMessage = (items: OrderData['items'], orderCode?: string) => {
-    const serviceLabel = serviceType.charAt(0).toUpperCase() + serviceType.slice(1);
-    const itemLines = items
-      .map(item => {
-        let line = `• ${item.name}`;
-        if (item.selectedVariation) {
-          line += ` (${item.selectedVariation.name})`;
-        }
-        if (item.selectedAddOns && item.selectedAddOns.length > 0) {
-          const addOnsText = item.selectedAddOns
-            .map(addOn => (addOn.quantity && addOn.quantity > 1 ? `${addOn.name} x${addOn.quantity}` : addOn.name))
-            .join(', ');
-          line += ` + ${addOnsText}`;
-        }
-        const lineTotal = item.totalPrice * item.quantity;
-        line += ` x${item.quantity} - ${lineTotal === 0 ? 'Free' : `₱${lineTotal.toFixed(2)}`}`;
-        return line;
-      })
-      .join('\n');
-
-    const segments = [
-      '🛒 The Alchemy - Mobile Bar ORDER',
-      orderCode ? `🆔 Order Code: ${orderCode}` : null,
-      '',
-      `👤 Customer: ${customerName}`,
-      `📞 Contact: ${contactNumber}`,
-      `📍 Service: ${serviceLabel}`,
-      serviceType === 'dine-in' ? `🪑 Table: ${trimmedTableNumber || 'Not specified'}` : null,
-      '',
-      '📋 ORDER DETAILS:',
-      itemLines,
-      '',
-      `💰 TOTAL: ${totalPrice === 0 ? 'Free' : `₱${totalPrice}`}`,
-      '',
-      `💳 Payment: ${selectedPaymentMethod?.name || paymentMethod}`,
-      '📸 Payment Screenshot: Please attach your payment receipt screenshot',
-      notes ? `\n📝 Notes: ${notes}` : null,
-      '',
-      'Please confirm this order to proceed. Thank you for choosing The Alchemy - Mobile Bar! 🥟',
-    ];
-
-    return segments.filter(Boolean).join('\n');
-  };
-
   const handlePlaceOrder = async () => {
     if (isSubmitting) return;
     
@@ -137,8 +93,6 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack, tabl
         status: 'pending',
       };
 
-      const baseMessage = buildMessengerMessage(orderItems);
-
       const { data, error: insertError } = await supabase
         .from('orders')
         .insert({
@@ -151,29 +105,14 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack, tabl
           total: payload.total,
           status: payload.status ?? 'pending',
           line_items: orderItems,
-          messenger_payload: baseMessage,
         })
         .select('id, order_code')
         .single();
 
       if (insertError) throw insertError;
 
-      const orderId = data?.id as string | undefined;
       const orderCode = data?.order_code as string | undefined;
       setCreatedOrderCode(orderCode ?? null);
-
-      const finalMessage = buildMessengerMessage(orderItems, orderCode);
-
-      if (orderId && finalMessage !== baseMessage) {
-        await supabase
-          .from('orders')
-          .update({ messenger_payload: finalMessage })
-          .eq('id', orderId);
-      }
-
-      const encodedMessage = encodeURIComponent(finalMessage);
-      const messengerUrl = `https://m.me/61579693577478?text=${encodedMessage}`;
-      window.open(messengerUrl, '_blank');
 
       onOrderComplete?.(orderCode ?? null);
     } catch (err) {
@@ -286,8 +225,8 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack, tabl
                 <label className="block text-sm font-medium text-alchemy-cream mb-3">Service Type *</label>
                 <div className="grid grid-cols-2 gap-3">
                   {[
-                    { value: 'dine-in', label: 'Dine In', icon: '🪑' },
-                    { value: 'pickup', label: 'Pickup', icon: '🚶' }
+                    { value: 'dine-in', label: 'Serve at the Table', icon: '🪑' },
+                    { value: 'pickup', label: 'Pick-up at the Bar', icon: '🚶' }
                   ].map((option) => {
                     const isDisabled = false;
                     return (
@@ -310,24 +249,24 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack, tabl
                 </div>
                 {isTableLocked && (
                   <p className="text-xs text-alchemy-cream/60 mt-2">
-                    QR code detected dine-in at table {tableNumber}.
+                    QR code detected for table service at table {tableNumber}.
                   </p>
                 )}
               </div>
 
-              {/* Dine-in Details */}
+              {/* Table Service Details */}
               {serviceType === 'dine-in' && (
                 <div className="rounded-xl border border-white/15 bg-white/5 px-4 py-4">
                   {trimmedTableNumber ? (
                     <>
                       <p className="text-sm text-alchemy-cream/70">Serving at table</p>
                       <p className="text-2xl font-playfair font-semibold text-alchemy-gold tracking-wider">Table {trimmedTableNumber}</p>
-                      <p className="text-xs text-alchemy-cream/50 mt-2">If this isn’t your table, please scan the QR code at your table to place an order.</p>
+                      <p className="text-xs text-alchemy-cream/50 mt-2">If this isn't your table, please scan the QR code at your table to place an order.</p>
                     </>
                   ) : (
                     <>
                       <p className="text-sm text-alchemy-cream/70 mb-2">No table detected</p>
-                      <p className="text-xs text-red-300">Please scan the QR code found on your table to place a dine-in order.</p>
+                      <p className="text-xs text-red-300">Please scan the QR code found on your table for table service.</p>
                     </>
                   )}
                 </div>
@@ -412,6 +351,9 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack, tabl
                   <p className="text-xl font-semibold text-alchemy-gold">
                     Amount: {totalPrice === 0 ? 'Free' : `₱${totalPrice}`}
                   </p>
+                  <p className="text-xs text-alchemy-cream/60 mt-3">
+                    Please complete payment before placing your order. Keep your payment reference for verification.
+                  </p>
                 </div>
                 <div className="flex-shrink-0">
                   <img 
@@ -427,8 +369,6 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack, tabl
               </div>
             </div>
           )}
-
-          {/* Reference Number */}
        
         </div>
 
@@ -454,10 +394,10 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack, tabl
               <h4 className="font-medium text-alchemy-cream mb-2">Customer Details</h4>
               <p className="text-sm text-alchemy-cream/70">Name: {customerName}</p>
               <p className="text-sm text-alchemy-cream/70">Contact: {contactNumber}</p>
-              <p className="text-sm text-alchemy-cream/70">Service: {serviceType.charAt(0).toUpperCase() + serviceType.slice(1)}</p>
+              <p className="text-sm text-alchemy-cream/70">Service: {serviceType === 'dine-in' ? 'Serve at the Table' : 'Pick-up at the Bar'}</p>
               {serviceType === 'pickup' && (
                 <p className="text-sm text-alchemy-cream/70">
-                  Pickup orders will be prepared right away.
+                  Pick-up orders will be prepared right away.
                 </p>
               )}
               {serviceType === 'dine-in' && (
@@ -523,11 +463,11 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack, tabl
                 : 'bg-gradient-to-r from-alchemy-gold via-alchemy-copper to-alchemy-gold text-alchemy-night hover:from-alchemy-copper hover:to-alchemy-gold hover:scale-[1.02]'
             }`}
           >
-            {isOverLimit ? 'Cart Limit Exceeded' : isSubmitting ? 'Saving order…' : 'Place Order'}
+            {isOverLimit ? 'Cart Limit Exceeded' : isSubmitting ? 'Placing order…' : 'Place Order'}
           </button>
           
           <p className="text-xs text-alchemy-cream/60 text-center mt-3">
-            You'll be redirected to Facebook Messenger to confirm your order. Don't forget to attach your payment screenshot!
+            Your order will be saved and you can track its status using your order code.
           </p>
         </div>
       </div>

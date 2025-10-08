@@ -20,7 +20,7 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
   pending: 'Pending',
   confirmed: 'Confirmed',
   preparing: 'Preparing',
-  ready: 'Ready for Pickup',
+  ready: 'Ready',
   completed: 'Completed',
   cancelled: 'Cancelled',
 };
@@ -401,7 +401,7 @@ const OrderManager: React.FC<OrderManagerProps> = ({ onBack }) => {
                         <h3 className="text-xl font-semibold text-alchemy-gold">{order.customerName}</h3>
                         <p className="text-sm text-alchemy-cream/60">Order Code: <span className="font-mono text-alchemy-cream">{order.orderCode}</span></p>
                         <p className="text-sm text-alchemy-cream/70">
-                          {order.serviceType === 'pickup' ? 'Pickup' : 'Dine-In'}
+                          {order.serviceType === 'pickup' ? 'Pick-up at the Bar' : 'Serve at the Table'}
                           {order.tableNumber ? ` • Table ${order.tableNumber}` : ''}
                         </p>
                       </div>
