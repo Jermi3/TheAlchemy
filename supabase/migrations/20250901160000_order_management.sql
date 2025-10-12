@@ -85,69 +85,69 @@ END;
 $$;
 
 -- Allow guests to create orders (used by the public website checkout)
-DO $$
+DO $policy$
 BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies
     WHERE schemaname = 'public' AND tablename = 'orders' AND policyname = 'Public can create orders'
   ) THEN
-    EXECUTE $$CREATE POLICY "Public can create orders"
+    CREATE POLICY "Public can create orders"
       ON orders
       FOR INSERT
       TO public
-      WITH CHECK (true)$$;
+      WITH CHECK (true);
   END IF;
 END;
-$$;
+$policy$;
 
 -- Only authenticated admins can read order data
-DO $$
+DO $policy$
 BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies
     WHERE schemaname = 'public' AND tablename = 'orders' AND policyname = 'Admins can read orders'
   ) THEN
-    EXECUTE $$CREATE POLICY "Admins can read orders"
+    CREATE POLICY "Admins can read orders"
       ON orders
       FOR SELECT
       TO authenticated
-      USING (true)$$;
+      USING (true);
   END IF;
 END;
-$$;
+$policy$;
 
 -- Only authenticated admins can update order data
-DO $$
+DO $policy$
 BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies
     WHERE schemaname = 'public' AND tablename = 'orders' AND policyname = 'Admins can update orders'
   ) THEN
-    EXECUTE $$CREATE POLICY "Admins can update orders"
+    CREATE POLICY "Admins can update orders"
       ON orders
       FOR UPDATE
       TO authenticated
       USING (true)
-      WITH CHECK (true)$$;
+      WITH CHECK (true);
   END IF;
 END;
-$$;
+$policy$;
 
 -- Only authenticated admins can delete order data
-DO $$
+DO $policy$
 BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies
     WHERE schemaname = 'public' AND tablename = 'orders' AND policyname = 'Admins can delete orders'
   ) THEN
-    EXECUTE $$CREATE POLICY "Admins can delete orders"
+    CREATE POLICY "Admins can delete orders"
       ON orders
       FOR DELETE
       TO authenticated
-      USING (true)$$;
+      USING (true);
   END IF;
 END;
-$$;
+$policy$;
 
 CREATE TRIGGER update_orders_updated_at
   BEFORE UPDATE ON orders
