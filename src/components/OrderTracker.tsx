@@ -14,6 +14,7 @@ interface TrackedOrder {
   service_type: string;
   status: OrderStatus;
   total: number;
+  tip?: number;
   table_number?: string;
   pickup_time?: string;
   created_at: string;
@@ -91,6 +92,7 @@ const OrderTracker: React.FC<OrderTrackerProps> = ({ onBack, initialCode }) => {
       service_type: record.service_type,
       status: (record.status ?? 'pending') as OrderStatus,
       total: Number(record.total ?? 0),
+      tip: record.tip ? Number(record.tip) : undefined,
       table_number: record.table_number ?? undefined,
       pickup_time: record.pickup_time ?? undefined,
       created_at: record.created_at,
@@ -195,6 +197,11 @@ const OrderTracker: React.FC<OrderTrackerProps> = ({ onBack, initialCode }) => {
                 <div>
                   <p className="font-medium text-alchemy-cream">Order Total</p>
                   <p className="text-lg text-alchemy-gold font-semibold">₱{order.total.toFixed(2)}</p>
+                  {order.tip && order.tip > 0 && (
+                    <p className="text-xs text-alchemy-cream/60 mt-1">
+                      (Includes ₱{order.tip.toFixed(2)} tip)
+                    </p>
+                  )}
                 </div>
                 {order.service_type === 'dine-in' && order.table_number && (
                   <div>

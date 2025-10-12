@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, AlertCircle } from 'lucide-react';
+import { ArrowLeft, AlertCircle, Copy, Check } from 'lucide-react';
 import { CartItem, PaymentMethod, ServiceType, OrderData } from '../types';
 import { usePaymentMethods } from '../hooks/usePaymentMethods';
 import { useSiteSettings } from '../hooks/useSiteSettings';
@@ -23,9 +23,12 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack, tabl
   const [tableNumber, setTableNumber] = useState(initialTableNumber || '');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('gcash');
   const [notes, setNotes] = useState('');
+  const [tip, setTip] = useState<number>(0);
+  const [customTip, setCustomTip] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [createdOrderCode, setCreatedOrderCode] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const isTableLocked = Boolean(initialTableNumber);
 
@@ -53,6 +56,36 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack, tabl
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
   const cartLimit = siteSettings?.cart_item_limit || 50;
   const isOverLimit = totalItems > cartLimit;
+
+  // Calculate final total with tip
+  const finalTotal = totalPrice + tip;
+
+  // Handle tip selection
+  const handleTipSelect = (amount: number) => {
+    setTip(amount);
+    setCustomTip('');
+  };
+
+  const handleCustomTipChange = (value: string) => {
+    setCustomTip(value);
+    const numValue = parseFloat(value);
+    if (!isNaN(numValue) && numValue >= 0) {
+      setTip(numValue);
+    } else if (value === '') {
+      setTip(0);
+    }
+  };
+
+  // Copy order code to clipboard
+  const copyOrderCode = async (code: string) => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
 
   const handleProceedToPayment = () => {
     setStep('payment');
@@ -88,7 +121,8 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack, tabl
         serviceType,
         tableNumber: serviceType === 'dine-in' ? trimmedTableNumber || undefined : undefined,
         paymentMethod,
-        total: totalPrice,
+        total: finalTotal,
+        tip: tip > 0 ? tip : undefined,
         notes: notes || undefined,
         status: 'pending',
       };
@@ -103,6 +137,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack, tabl
           notes: payload.notes ?? null,
           payment_method: payload.paymentMethod,
           total: payload.total,
+          tip: payload.tip ?? 0,
           status: payload.status ?? 'pending',
           line_items: orderItems,
         })
@@ -113,6 +148,17 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack, tabl
 
       const orderCode = data?.order_code as string | undefined;
       setCreatedOrderCode(orderCode ?? null);
+
+      // Auto-copy order code to clipboard
+      if (orderCode) {
+        try {
+          await navigator.clipboard.writeText(orderCode);
+          setCopied(true);
+          setTimeout(() => setCopied(false), 3000);
+        } catch (err) {
+          console.error('Failed to auto-copy order code:', err);
+        }
+      }
 
       onOrderComplete?.(orderCode ?? null);
     } catch (err) {
@@ -339,6 +385,44 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack, tabl
             ))}
           </div>
 
+          {/* Tip Section */}
+          <div className="bg-white/5 border border-white/10 rounded-lg p-6 mb-6">
+            <h3 className="font-medium text-alchemy-gold mb-4">Add a Tip (Optional)</h3>
+            <div className="grid grid-cols-4 gap-2 mb-4">
+              {[20, 50, 100, 200].map((amount) => (
+                <button
+                  key={amount}
+                  type="button"
+                  onClick={() => handleTipSelect(amount)}
+                  className={`py-2 px-3 rounded-lg border transition-all duration-200 ${
+                    tip === amount && !customTip
+                      ? 'border-alchemy-gold bg-alchemy-gold/20 text-alchemy-gold'
+                      : 'border-white/10 bg-white/5 text-alchemy-cream hover:border-alchemy-gold/60'
+                  }`}
+                >
+                  ₱{amount}
+                </button>
+              ))}
+            </div>
+            <div>
+              <label className="block text-sm text-alchemy-cream/70 mb-2">Custom Amount</label>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                value={customTip}
+                onChange={(e) => handleCustomTipChange(e.target.value)}
+                placeholder="Enter custom tip"
+                className="w-full px-4 py-2 border border-white/15 bg-white/5 text-alchemy-cream rounded-lg focus:ring-2 focus:ring-alchemy-gold focus:border-transparent transition-all duration-200 placeholder:text-alchemy-cream/40"
+              />
+            </div>
+            {tip > 0 && (
+              <p className="text-sm text-alchemy-gold mt-3">
+                Thank you for your tip of ₱{tip.toFixed(2)}! 💛
+              </p>
+            )}
+          </div>
+
           {/* Payment Details with QR Code */}
           {selectedPaymentMethod && (
             <div className="bg-white/5 border border-white/10 rounded-lg p-6 mb-6">
@@ -349,8 +433,13 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack, tabl
                   <p className="font-mono text-alchemy-gold font-medium">{selectedPaymentMethod.account_number}</p>
                   <p className="text-sm text-alchemy-cream/70 mb-3">Account Name: {selectedPaymentMethod.account_name}</p>
                   <p className="text-xl font-semibold text-alchemy-gold">
-                    Amount: {totalPrice === 0 ? 'Free' : `₱${totalPrice}`}
+                    Amount: {finalTotal === 0 ? 'Free' : `₱${finalTotal.toFixed(2)}`}
                   </p>
+                  {tip > 0 && (
+                    <p className="text-sm text-alchemy-cream/70 mt-1">
+                      (Subtotal: ₱{totalPrice.toFixed(2)} + Tip: ₱{tip.toFixed(2)})
+                    </p>
+                  )}
                   <p className="text-xs text-alchemy-cream/60 mt-3">
                     Please complete payment before placing your order. Keep your payment reference for verification.
                   </p>
@@ -433,9 +522,21 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack, tabl
           </div>
           
           <div className="border-t border-white/10 pt-4 mb-6">
+            {tip > 0 && (
+              <div className="flex items-center justify-between text-sm text-alchemy-cream/70 mb-2">
+                <span>Subtotal:</span>
+                <span>₱{totalPrice.toFixed(2)}</span>
+              </div>
+            )}
+            {tip > 0 && (
+              <div className="flex items-center justify-between text-sm text-alchemy-cream/70 mb-2">
+                <span>Tip:</span>
+                <span>₱{tip.toFixed(2)}</span>
+              </div>
+            )}
             <div className="flex items-center justify-between text-2xl font-playfair font-semibold text-alchemy-gold">
               <span>Total:</span>
-              <span>{totalPrice === 0 ? 'Free' : `₱${totalPrice}`}</span>
+              <span>{finalTotal === 0 ? 'Free' : `₱${finalTotal.toFixed(2)}`}</span>
             </div>
           </div>
 
@@ -447,8 +548,28 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack, tabl
 
           {createdOrderCode && !submitError && (
             <div className="mb-4 bg-emerald-500/10 border border-emerald-500/40 text-emerald-200 px-4 py-3 rounded-xl">
-              <div className="font-semibold">Order saved! Reference Code: {createdOrderCode}</div>
-              <div className="text-xs text-emerald-100/80 mt-1">
+              <div className="font-semibold mb-2">Order saved! Reference Code:</div>
+              <div className="flex items-center justify-between bg-emerald-500/5 rounded-lg p-3 border border-emerald-500/30">
+                <code className="font-mono text-lg font-bold text-emerald-100">{createdOrderCode}</code>
+                <button
+                  onClick={() => copyOrderCode(createdOrderCode)}
+                  className="ml-3 p-2 hover:bg-emerald-500/20 rounded-lg transition-all duration-200 flex items-center space-x-2"
+                  title="Copy order code"
+                >
+                  {copied ? (
+                    <>
+                      <Check className="h-5 w-5 text-emerald-300" />
+                      <span className="text-sm">Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-5 w-5 text-emerald-300" />
+                      <span className="text-sm">Copy</span>
+                    </>
+                  )}
+                </button>
+              </div>
+              <div className="text-xs text-emerald-100/80 mt-2">
                 Keep this code handy — you can use it on the Track Order page to check your status anytime.
               </div>
             </div>

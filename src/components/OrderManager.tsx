@@ -447,6 +447,11 @@ const OrderManager: React.FC<OrderManagerProps> = ({ onBack }) => {
                       <div>
                         <p className="font-medium text-alchemy-cream">Order Total</p>
                         <p className="text-lg text-alchemy-gold font-semibold">₱{order.total.toFixed(2)}</p>
+                        {order.tip && order.tip > 0 && (
+                          <p className="text-xs text-alchemy-cream/60 mt-1">
+                            (Includes ₱{order.tip.toFixed(2)} tip)
+                          </p>
+                        )}
                       </div>
                     </div>
 

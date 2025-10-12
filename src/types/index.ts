@@ -58,7 +58,7 @@ export interface OrderData {
   paymentMethod: 'gcash' | 'maya' | 'bank-transfer';
   total: number;
   notes?: string;
-  messengerPayload?: string;
+  tip?: number;
   status?: OrderStatus;
 }
 
@@ -67,12 +67,21 @@ export type ServiceType = 'dine-in' | 'pickup';
 
 export type OrderStatus = 'pending' | 'confirmed' | 'preparing' | 'ready' | 'completed' | 'cancelled';
 
-export interface Order extends OrderData {
+export interface Order {
   id: string;
   orderCode: string;
+  customerName: string;
+  contactNumber: string;
+  serviceType: 'dine-in' | 'pickup';
+  tableNumber?: string;
+  paymentMethod: 'gcash' | 'maya' | 'bank-transfer';
+  total: number;
+  notes?: string;
+  tip?: number;
+  status: OrderStatus;
+  items: OrderLineItem[];
   created_at: string;
   updated_at: string;
-  status: OrderStatus;
 }
 
 // Site Settings Types

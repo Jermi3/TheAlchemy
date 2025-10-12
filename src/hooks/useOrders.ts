@@ -12,9 +12,9 @@ type OrderRow = {
   notes: string | null;
   payment_method: string;
   total: number;
+  tip?: number | null;
   status: string;
   line_items: OrderLineItem[] | null;
-  messenger_payload: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -28,10 +28,10 @@ const mapRowToOrder = (row: OrderRow): Order => ({
   tableNumber: row.table_number ?? undefined,
   paymentMethod: row.payment_method as Order['paymentMethod'],
   total: Number(row.total),
+  tip: row.tip ? Number(row.tip) : undefined,
   status: row.status as OrderStatus,
   items: (row.line_items ?? []) as OrderLineItem[],
   notes: row.notes ?? undefined,
-  messengerPayload: row.messenger_payload ?? undefined,
   created_at: row.created_at,
   updated_at: row.updated_at,
 });
